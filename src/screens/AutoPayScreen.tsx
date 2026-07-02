@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, AutoPay } from '../services/db';
@@ -37,6 +38,14 @@ export const AutoPayScreen: React.FC = () => {
 
   useEffect(() => {
     fetchAutoPays();
+
+    const subscription = DeviceEventEmitter.addListener('onNewTransaction', () => {
+      fetchAutoPays();
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, [fetchAutoPays]);
 
   const handleCancelClick = async (autopay: AutoPay) => {

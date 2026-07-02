@@ -46,19 +46,6 @@ export const ProfileScreen: React.FC = () => {
     fetchStats();
   }, [fetchStats]);
 
-  const handleSeedData = async () => {
-    setLoading(true);
-    try {
-      await db.seedDummyData();
-      Alert.alert('Success', 'Rich financial dummy data has been successfully seeded in the local SQLite database.');
-      await fetchStats();
-    } catch (err: any) {
-      Alert.alert('Seed Failed', err.message || 'An error occurred.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleClearData = () => {
     Alert.alert(
       'Wipe Database',
@@ -179,19 +166,7 @@ export const ProfileScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Maintenance</Text>
         <View style={styles.btnRow}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]}
-            onPress={handleSeedData}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text style={[styles.actionBtnText, { color: colors.primary }]}>🌱 Seed Demo Data</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.error + '15' }]}
+            style={[styles.actionBtn, { backgroundColor: colors.error + '15', flex: 1 }]}
             onPress={handleClearData}
             disabled={loading}
           >

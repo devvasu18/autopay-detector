@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   Modal,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -50,6 +51,7 @@ function OnboardingScreen({
       // Sync initial database in background
       try {
         await smsService.sync();
+        DeviceEventEmitter.emit('onNewTransaction');
       } catch (err) {
         console.warn('Initial sync warning', err);
       }

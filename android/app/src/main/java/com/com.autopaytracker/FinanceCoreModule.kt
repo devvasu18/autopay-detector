@@ -9,94 +9,35 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
 import android.util.Base64
 import com.facebook.react.bridge.*
-import java.util.*
+import com.facebook.react.modules.core.DeviceEventManagerModule
+import java.util.Locale
 import java.util.concurrent.Executors
-import java.util.regex.Pattern
 
 class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private val dbHelper = FinanceDatabaseHelper(reactContext)
     private val databaseExecutor = Executors.newSingleThreadExecutor()
 
+    init {
+        instance = this
+    }
+
+    override fun invalidate() {
+        super.invalidate()
+        instance = null
+    }
+
     override fun getName(): String {
         return "FinanceCoreModule"
     }
 
-    class FinanceDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
-        override fun onCreate(db: SQLiteDatabase) {
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS raw_sms (
-                    id TEXT PRIMARY KEY,
-                    address TEXT,
-                    body TEXT,
-                    date INTEGER,
-                    is_processed INTEGER DEFAULT 0
-                )
-            """)
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sms_id TEXT UNIQUE,
-                    merchant TEXT,
-                    amount REAL,
-                    date INTEGER,
-                    payment_method TEXT,
-                    bank TEXT,
-                    type TEXT,
-                    category TEXT,
-                    confidence REAL,
-                    status TEXT,
-                    raw_body TEXT
-                )
-            """)
-            db.execSQL("""
-                CREATE TABLE IF NOT EXISTS autopay (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    merchant TEXT,
-                    amount REAL,
-                    frequency TEXT,
-                    bank TEXT,
-                    upi_id TEXT,
-                    status TEXT,
-                    first_detected INTEGER,
-                    last_payment INTEGER,
-                    next_expected_payment INTEGER,
-                    sms_id TEXT UNIQUE,
-                    raw_body TEXT
-                )
-            """)
-        }
-
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            db.execSQL("DROP TABLE IF EXISTS raw_sms")
-            db.execSQL("DROP TABLE IF EXISTS transactions")
-            db.execSQL("DROP TABLE IF EXISTS autopay")
-            onCreate(db)
-        }
-
-        companion object {
-            const val DATABASE_NAME = "finance_tracker.db"
-            const val DATABASE_VERSION = 1
+    fun sendEvent(eventName: String, params: WritableMap?) {
+        if (reactApplicationContext.hasActiveCatalystInstance()) {
+            reactApplicationContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                .emit(eventName, params)
         }
     }
-
-    class ParsedSMS(
-        val smsId: String,
-        val merchant: String,
-        val amount: Double,
-        val date: Long,
-        val paymentMethod: String,
-        val bank: String,
-        val type: String, // CREDIT or DEBIT
-        val category: String,
-        val confidence: Double,
-        val status: String,
-        val rawBody: String,
-        val isAutoPay: Boolean,
-        val frequency: String,
-        val upiId: String,
-        val autoPayStatus: String
-    )
 
     @ReactMethod
     fun executeSql(query: String, params: ReadableArray, promise: Promise) {
@@ -292,8 +233,8 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
 
                             processedCount++
 
-                            if (isFinancialSMS(address, body)) {
-                                val parsed = parseFinancialSMS(smsId, address, body, date)
+                            if (FinanceParser.isFinancialSMS(address, body)) {
+                                val parsed = FinanceParser.parseFinancialSMS(smsId, address ?: "", body ?: "", date)
                                 if (parsed != null) {
                                     val stmtTx = db.compileStatement("""
                                         INSERT OR REPLACE INTO transactions 
@@ -325,7 +266,7 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
                                         stmtAuto.bindString(4, parsed.bank)
                                         stmtAuto.bindString(5, parsed.upiId)
                                         stmtAuto.bindString(6, parsed.autoPayStatus)
-                                        val existingFirst = queryAutoPayFirstDetected(db, parsed.merchant)
+                                        val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant)
                                         stmtAuto.bindLong(7, if (existingFirst > 0) existingFirst else parsed.date)
                                         stmtAuto.bindLong(8, parsed.date)
                                         val nextPayment = parsed.date + (30L * 24L * 60L * 60L * 1000L)
@@ -357,215 +298,7 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
         }
     }
 
-    private fun isFinancialSMS(sender: String?, body: String?): Boolean {
-        if (sender == null || body == null) return false
-        val s = sender.uppercase(Locale.US)
-        val b = body.lowercase(Locale.US)
-
-        val hasLetter = s.any { it.isLetter() }
-        if (!hasLetter) return false
-
-        if (b.contains("otp") || b.contains("one time password") || b.contains("one-time password") || 
-            b.contains("verification code") || b.contains("secret code") || b.contains("verification pin")
-        ) {
-            return false
-        }
-
-        if (b.contains("apply now") || b.contains("click to") || b.contains("congratulations") || 
-            b.contains("won rs") || (b.contains("cashback up to") && b.contains("link") && !b.contains("credited"))
-        ) {
-            if (b.contains("offer") || b.contains("pre-approved") || b.contains("discount") || b.contains("win cash")) {
-                return false
-            }
-        }
-
-        val hasAmount = b.contains("rs") || b.contains("rs.") || b.contains("inr") || b.contains("₹") || b.contains("usd")
-        val hasFinKeywords = b.contains("debited") || b.contains("credited") || b.contains("spent") || b.contains("paid") ||
-                b.contains("payment") || b.contains("withdrawn") || b.contains("deposited") || b.contains("mandate") ||
-                b.contains("autopay") || b.contains("standing instruction") || b.contains("emi") || b.contains("sip") ||
-                b.contains("charge") || b.contains("renewed") || b.contains("debit") || b.contains("received") ||
-                b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring")
-
-        return hasAmount && hasFinKeywords
-    }
-
-    private fun parseFinancialSMS(smsId: String, sender: String, body: String, date: Long): ParsedSMS? {
-        val b = body.lowercase(Locale.US)
-        val s = sender.uppercase(Locale.US)
-
-        var amount = 0.0
-        val amountPatterns = listOf(
-            Pattern.compile("(?:rs\\.?|inr|₹)\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
-            Pattern.compile("spent\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
-            Pattern.compile("debited\\s+with\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
-            Pattern.compile("credited\\s+with\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)")
-        )
-
-        for (pattern in amountPatterns) {
-            val matcher = pattern.matcher(b)
-            if (matcher.find()) {
-                val amtStr = matcher.group(1)?.replace(",", "")
-                try {
-                    amount = amtStr?.toDouble() ?: 0.0
-                    if (amount > 0) break
-                } catch (e: Exception) {}
-            }
-        }
-        if (amount == 0.0) return null
-
-        var type = "DEBIT"
-        if (b.contains("credited") || b.contains("received") || b.contains("deposited") || 
-            b.contains("refund") || b.contains("cashback") || b.contains("salary") || b.contains("interest")) {
-            type = "CREDIT"
-        }
-
-        var bank = "Unknown Bank"
-        val bankKeywords = mapOf(
-            "HDFC" to "HDFC Bank",
-            "SBI" to "SBI",
-            "ICICI" to "ICICI Bank",
-            "AXIS" to "Axis Bank",
-            "PAYTM" to "Paytm Bank",
-            "PHONEPE" to "PhonePe",
-            "PNB" to "Punjab National Bank",
-            "BOI" to "Bank of India",
-            "KOTAK" to "Kotak Bank",
-            "INDUS" to "IndusInd Bank",
-            "CANARA" to "Canara Bank",
-            "UNION" to "Union Bank",
-            "HSBC" to "HSBC",
-            "CITI" to "Citi Bank",
-            "AMEX" to "American Express",
-            "RBL" to "RBL Bank",
-            "YESBK" to "Yes Bank",
-            "FBL" to "Federal Bank",
-            "JUPITER" to "Jupiter"
-        )
-        for ((key, value) in bankKeywords) {
-            if (s.contains(key) || b.contains(key.lowercase(Locale.US))) {
-                bank = value
-                break
-            }
-        }
-
-        var category = "Others"
-        if (b.contains("salary")) {
-            category = "Salary"
-        } else if (b.contains("netflix") || b.contains("spotify") || b.contains("amazon prime") || 
-            b.contains("youtube premium") || b.contains("disney") || b.contains("hotstar") || 
-            b.contains("apple") || b.contains("google play") || b.contains("subscription") || b.contains("prime membership")) {
-            category = "Subscription"
-        } else if (b.contains("emi") || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
-            category = "Loan / EMI"
-        } else if (b.contains("sip") || b.contains("mutual fund") || b.contains("groww") || 
-            b.contains("zerodha") || b.contains("upstox") || b.contains("investment")) {
-            category = "Investment"
-        } else if (b.contains("electricity") || b.contains("power") || b.contains("bescom") || 
-            b.contains("water bill") || b.contains("gas bill") || b.contains("utility bill")) {
-            category = "Bill"
-        } else if (b.contains("recharge") || b.contains("mobile recharge") || b.contains("jio") || 
-            b.contains("airtel") || b.contains("vi prepaid")) {
-            category = "Recharge"
-        } else if (b.contains("insurance") || b.contains("premium") || b.contains("lic")) {
-            category = "Insurance"
-        } else if (b.contains("refund")) {
-            category = "Refund"
-        } else if (b.contains("cashback")) {
-            category = "Cashback"
-        } else if (b.contains("interest")) {
-            category = "Interest"
-        } else if (b.contains("swiggy") || b.contains("zomato") || b.contains("restaurant") || b.contains("food")) {
-            category = "Food"
-        } else if (b.contains("uber") || b.contains("ola") || b.contains("irctc") || b.contains("travel") || b.contains("fuel") || b.contains("petrol")) {
-            category = "Travel / Fuel"
-        } else if (b.contains("amazon") || b.contains("flipkart") || b.contains("myntra") || b.contains("shopping")) {
-            category = "Shopping"
-        }
-
-        var merchant = "Unknown Merchant"
-        val merchantPatterns = listOf(
-            Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20})\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
-            Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
-            Pattern.compile("debited\\s+at\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
-            Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})")
-        )
-
-        for (pattern in merchantPatterns) {
-            val matcher = pattern.matcher(b)
-            if (matcher.find()) {
-                merchant = matcher.group(1)?.trim() ?: "Unknown Merchant"
-                merchant = merchant.split(" txn ")[0].split(" ref ")[0].split(" date ")[0].trim()
-                break
-            }
-        }
-
-        if (merchant == "Unknown Merchant" || merchant.lowercase(Locale.US).contains("unknown")) {
-            val commonMerchants = listOf(
-                "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one",
-                "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
-                "lic", "airtel", "jio", "vi", "tataplay", "fastag"
-            )
-            for (m in commonMerchants) {
-                if (b.contains(m)) {
-                    merchant = m.substring(0, 1).uppercase(Locale.US) + m.substring(1)
-                    break
-                }
-            }
-        }
-
-        val isAutoPay = b.contains("autopay") || b.contains("auto pay") || b.contains("mandate") || 
-            b.contains("standing instruction") || b.contains("standing instr") || b.contains("recurring") || 
-            b.contains("auto debit") || b.contains("auto-debit") || b.contains("debit instruction") || 
-            b.contains("si") || b.contains("nach") || b.contains("ach") || b.contains("ecs") || 
-            b.contains("renewal successful") || b.contains("subscription renewed") || b.contains("renewed successfully")
-
-        var autoPayStatus = "Active"
-        if (b.contains("cancel") || b.contains("revoked") || b.contains("deactivated") || b.contains("stopped")) {
-            autoPayStatus = "Cancelled"
-        } else if (b.contains("failed") || b.contains("declined") || b.contains("missed")) {
-            autoPayStatus = "Missed"
-        }
-
-        var paymentMethod = "UPI"
-        if (b.contains("card") || b.contains("credit card") || b.contains("debit card") || b.contains("visa") || b.contains("mastercard") || b.contains("rupay")) {
-            paymentMethod = "Card"
-        } else if (b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
-            paymentMethod = "Bank Transfer"
-        }
-
-        var upiId = ""
-        val upiPattern = Pattern.compile("([a-zA-Z0-9\\.\\-_]+@[a-zA-Z0-9]+)")
-        val upiMatcher = upiPattern.matcher(b)
-        if (upiMatcher.find()) {
-            upiId = upiMatcher.group(1) ?: ""
-        }
-
-        return ParsedSMS(
-            smsId = smsId,
-            merchant = merchant,
-            amount = amount,
-            date = date,
-            paymentMethod = paymentMethod,
-            bank = bank,
-            type = type,
-            category = category,
-            confidence = if (category == "Others" && merchant == "Unknown Merchant") 0.6 else 0.95,
-            status = if (b.contains("failed") || b.contains("declined")) "Failed" else "Success",
-            rawBody = body,
-            isAutoPay = isAutoPay,
-            frequency = "Monthly",
-            upiId = upiId,
-            autoPayStatus = autoPayStatus
-        )
-    }
-
-    private fun queryAutoPayFirstDetected(db: SQLiteDatabase, merchant: String): Long {
-        var firstDetected: Long = 0
-        val cursor = db.rawQuery("SELECT first_detected FROM autopay WHERE merchant = ?", arrayOf(merchant))
-        if (cursor.moveToFirst()) {
-            firstDetected = cursor.getLong(0)
-        }
-        cursor.close()
-        return firstDetected
+    companion object {
+        var instance: FinanceCoreModule? = null
     }
 }

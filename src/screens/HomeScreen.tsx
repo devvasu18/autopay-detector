@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction, AutoPay } from '../services/db';
@@ -56,7 +57,15 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   useEffect(() => {
     initData();
-  }, [initData]);
+
+    const subscription = DeviceEventEmitter.addListener('onNewTransaction', () => {
+      fetchStats();
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [initData, fetchStats]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -86,11 +95,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setLoading(true);
     try {
       const syncResult = await smsService.sync();
+      DeviceEventEmitter.emit('onNewTransaction');
       Alert.alert(
         'Sync Complete',
         `Successfully scanned ${syncResult.processedCount} messages and processed ${syncResult.parsedCount} financial transactions.`
       );
-      await fetchStats();
     } catch (err: any) {
       Alert.alert('Sync Failed', err.message || 'An error occurred during synchronization.');
     } finally {

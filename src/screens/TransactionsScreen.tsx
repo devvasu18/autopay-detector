@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction } from '../services/db';
@@ -85,8 +86,7 @@ export const TransactionsScreen: React.FC = () => {
           sql += ' ORDER BY amount ASC';
         }
 
-        sql += ' LIMIT ? OFFSET ?';
-        params.push(pageSize, offset);
+        sql += ` LIMIT ${pageSize} OFFSET ${offset}`;
 
         const data = await db.execute(sql, params);
 
@@ -112,6 +112,16 @@ export const TransactionsScreen: React.FC = () => {
     setPage(0);
     fetchTransactions(0, true);
   }, [search, selectedCategory, selectedType, sortOrder, fetchTransactions]);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('onNewTransaction', () => {
+      setPage(0);
+      fetchTransactions(0, true);
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [fetchTransactions]);
 
   const loadMore = () => {
     if (!hasMore || loadingMore || loading) return;

@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../services/db';
@@ -59,6 +60,14 @@ export const AnalyticsScreen: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    const subscription = DeviceEventEmitter.addListener('onNewTransaction', () => {
+      loadData();
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, [loadData]);
 
   const formatCurrency = (value: number) => {
