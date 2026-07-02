@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Modal,
   DeviceEventEmitter,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -174,6 +176,29 @@ function MainTabs() {
 function AppContent() {
   const { colors, isDark } = useTheme();
   const [isOnboarding, setIsOnboarding] = useState(true);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const hasPerm = await smsService.checkPermission();
+        if (hasPerm) {
+          try {
+            const res = await smsService.sync();
+            if (res.processedCount > 0 || res.parsedCount > 0) {
+              DeviceEventEmitter.emit('onNewTransaction');
+            }
+          } catch (err) {
+            console.warn('Auto foreground sync failed', err);
+          }
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

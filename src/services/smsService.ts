@@ -7,7 +7,9 @@ export const smsService = {
     if (Platform.OS !== 'android') {
       return false;
     }
-    return PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_SMS);
+    const readGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_SMS);
+    const receiveGranted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECEIVE_SMS);
+    return readGranted && receiveGranted;
   },
 
   requestPermission: async (): Promise<boolean> => {
@@ -15,18 +17,14 @@ export const smsService = {
       return false;
     }
     try {
-      const granted = await PermissionsAndroid.request(
+      const granted = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.READ_SMS,
-        {
-          title: 'SMS Permission Required',
-          message:
-            'AutoPay Tracker analyzes only financial SMS messages on your device to help you manage your subscriptions, recurring bills, and EMIs. We never upload your data to any cloud server.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        }
+        PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+      ]);
+      return (
+        granted[PermissionsAndroid.PERMISSIONS.READ_SMS] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED
       );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.warn(err);
       return false;
