@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   DeviceEventEmitter,
+  ScrollView,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction } from '../services/db';
