@@ -10,9 +10,7 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { smsService } from './src/services/smsService';
@@ -24,8 +22,6 @@ import { AutoPayScreen } from './src/screens/AutoPayScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
-
-const Tab = createBottomTabNavigator();
 
 function OnboardingScreen({
   visible,
@@ -123,59 +119,10 @@ function OnboardingScreen({
   );
 }
 
-function MainTabs() {
-  const { colors } = useTheme();
-
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused }) => {
-          let emoji = '🏠';
-          if (route.name === 'AutoPay') emoji = '🔄';
-          else if (route.name === 'Transactions') emoji = '💳';
-          else if (route.name === 'Analytics') emoji = '📊';
-          else if (route.name === 'Profile') emoji = '👤';
-
-          return (
-            <Text
-              style={{
-                fontSize: 20,
-                opacity: focused ? 1 : 0.6,
-              }}
-            >
-              {emoji}
-            </Text>
-          );
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
-          elevation: 8,
-          shadowOpacity: 0.1,
-          height: 60,
-          paddingBottom: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: 'bold',
-        },
-        headerShown: false,
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="AutoPay" component={AutoPayScreen} />
-      <Tab.Screen name="Transactions" component={TransactionsScreen} />
-      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
-    </Tab.Navigator>
-  );
-}
-
 function AppContent() {
   const { colors, isDark } = useTheme();
   const [isOnboarding, setIsOnboarding] = useState(true);
+  const [activeTab, setActiveTab] = useState<'Home' | 'AutoPay' | 'Transactions' | 'Analytics' | 'Profile'>('Home');
 
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
@@ -200,20 +147,94 @@ function AppContent() {
     };
   }, []);
 
+  // Custom Navigation Event Listener for "See All" triggers
+  useEffect(() => {
+    const navSub = DeviceEventEmitter.addListener('navigate', (target: string) => {
+      if (
+        target === 'Home' ||
+        target === 'AutoPay' ||
+        target === 'Transactions' ||
+        target === 'Analytics' ||
+        target === 'Profile'
+      ) {
+        setActiveTab(target);
+      }
+    });
+    return () => {
+      navSub.remove();
+    };
+  }, []);
+
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'Home':
+        return <HomeScreen />;
+      case 'AutoPay':
+        return <AutoPayScreen />;
+      case 'Transactions':
+        return <TransactionsScreen />;
+      case 'Analytics':
+        return <AnalyticsScreen />;
+      case 'Profile':
+        return <ProfileScreen />;
+      default:
+        return <HomeScreen />;
+    }
+  };
+
+  const tabs = [
+    { key: 'Home', label: 'Home', icon: '🏠' },
+    { key: 'AutoPay', label: 'AutoPay', icon: '🔄' },
+    { key: 'Transactions', label: 'Ledger', icon: '💳' },
+    { key: 'Analytics', label: 'Analytics', icon: '📊' },
+    { key: 'Profile', label: 'Profile', icon: '👤' },
+  ] as const;
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.card}
       />
-      <NavigationContainer>
-        <MainTabs />
-      </NavigationContainer>
+      <View style={{ flex: 1 }}>
+        {renderScreen()}
+      </View>
+
+      {/* Custom Bottom Navigation Bar */}
+      <View style={[styles.tabBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabIcon, { opacity: isActive ? 1 : 0.6 }]}>
+                {tab.icon}
+              </Text>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  {
+                    color: isActive ? colors.primary : colors.textSecondary,
+                    fontWeight: isActive ? 'bold' : 'normal',
+                  },
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <OnboardingScreen
         visible={isOnboarding}
         onComplete={() => setIsOnboarding(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -302,5 +323,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 18,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    height: 60,
+    borderTopWidth: 1,
+    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 4,
+    paddingBottom: 4,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIcon: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  tabLabel: {
+    fontSize: 10,
   },
 });

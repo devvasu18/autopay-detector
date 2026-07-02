@@ -14,7 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import { db, Transaction, AutoPay } from '../services/db';
 import { smsService } from '../services/smsService';
 
-export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -230,7 +230,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Upcoming AutoPays</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('AutoPay')}>
+              <TouchableOpacity onPress={() => DeviceEventEmitter.emit('navigate', 'AutoPay')}>
                 <Text style={[styles.sectionLink, { color: colors.primary }]}>See All</Text>
               </TouchableOpacity>
             </View>
@@ -256,25 +256,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
         )}
 
-        {/* Quick Insights Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Quick Insights</Text>
-          {getInsights().map((insight) => (
-            <View key={insight.id} style={[styles.insightCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={styles.insightEmoji}>{insight.emoji}</Text>
-              <View style={styles.insightContent}>
-                <Text style={[styles.insightText, { color: colors.text }]}>{insight.text}</Text>
-                <Text style={[styles.insightDetail, { color: colors.textSecondary }]}>{insight.detail}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
         {/* Recent Transactions Section */}
-        <View style={[styles.sectionContainer, { marginBottom: 30 }]}>
+        <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Transactions')}>
+            <TouchableOpacity onPress={() => DeviceEventEmitter.emit('navigate', 'Transactions')}>
               <Text style={[styles.sectionLink, { color: colors.primary }]}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -319,6 +305,20 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               </View>
             ))
           )}
+        </View>
+
+        {/* Quick Insights Section */}
+        <View style={[styles.sectionContainer, { marginBottom: 30 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Quick Insights</Text>
+          {getInsights().map((insight) => (
+            <View key={insight.id} style={[styles.insightCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={styles.insightEmoji}>{insight.emoji}</Text>
+              <View style={styles.insightContent}>
+                <Text style={[styles.insightText, { color: colors.text }]}>{insight.text}</Text>
+                <Text style={[styles.insightDetail, { color: colors.textSecondary }]}>{insight.detail}</Text>
+              </View>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </View>
