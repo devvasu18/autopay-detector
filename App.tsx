@@ -185,7 +185,7 @@ function AppContent() {
   const tabs = [
     { key: 'Home', label: 'Home', icon: '🏠' },
     { key: 'AutoPay', label: 'AutoPay', icon: '🔄' },
-    { key: 'Transactions', label: 'Ledger', icon: '💳' },
+    { key: 'Transactions', label: 'Transactions', icon: '💳' },
     { key: 'Analytics', label: 'Analytics', icon: '📊' },
     { key: 'Profile', label: 'Profile', icon: '👤' },
   ] as const;

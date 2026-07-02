@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   DeviceEventEmitter,
+  RefreshControl,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, AutoPay } from '../services/db';
@@ -160,7 +161,13 @@ export const AutoPayScreen: React.FC = () => {
       ) : autoPays.length === 0 ? (
         <ScrollView
           contentContainerStyle={styles.emptyContainer}
-          refreshControl={<ActivityIndicator size="small" color={colors.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchAutoPays}
+              colors={[colors.primary]}
+            />
+          }
         >
           <Text style={[styles.emptyEmoji]}>🔄</Text>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No AutoPays Detected</Text>
@@ -169,7 +176,16 @@ export const AutoPayScreen: React.FC = () => {
           </Text>
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={styles.listContainer}>
+        <ScrollView
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchAutoPays}
+              colors={[colors.primary]}
+            />
+          }
+        >
           {autoPays.map((ap) => (
             <View
               key={ap.id}
