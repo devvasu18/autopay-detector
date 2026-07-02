@@ -126,7 +126,7 @@ export const db = {
   getWeeklySpending: async (): Promise<{ day: string; amount: number }[]> => {
     return db.execute(
       "SELECT strftime('%w', datetime(date / 1000, 'unixepoch')) as day, SUM(amount) as amount FROM transactions WHERE type = 'DEBIT' AND date > ? GROUP BY day ORDER BY day ASC",
-      [Date.now() - 7L * 24 * 60 * 60 * 1000] // last 7 days
+      [Date.now() - 7 * 24 * 60 * 60 * 1000] // last 7 days
     );
   },
 
