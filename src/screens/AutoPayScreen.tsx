@@ -94,8 +94,13 @@ export const AutoPayScreen: React.FC = () => {
 
   const formatDate = (timestamp: number) => {
     if (!timestamp) return 'N/A';
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'N/A';
+      return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (e) {
+      return 'N/A';
+    }
   };
 
   const getStatusColor = (status: string) => {

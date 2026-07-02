@@ -179,17 +179,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={[styles.greeting, { color: colors.textSecondary }]}>Welcome Back,</Text>
           <Text style={[styles.title, { color: colors.text }]}>AutoPay Tracker</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.syncButton, { backgroundColor: colors.primaryContainer }]}
-          onPress={handleSync}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Text style={[styles.syncText, { color: colors.primary }]}>Sync SMS</Text>
-          )}
-        </TouchableOpacity>
       </View>
 
       <ScrollView
