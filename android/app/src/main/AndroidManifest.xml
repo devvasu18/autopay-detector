@@ -16,6 +16,9 @@
         <package android:name="com.msf.hdfc.payzapp" />
         <package android:name="com.msf.kbank.mobile" />
         <package android:name="com.axis.mobile" />
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application

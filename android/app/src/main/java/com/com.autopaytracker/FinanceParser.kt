@@ -39,9 +39,44 @@ object FinanceParser {
         val hasLetter = s.any { it.isLetter() }
         if (!hasLetter) return false
 
+        // 1. OTP / Verification code check
         if (b.contains("otp") || b.contains("one time password") || b.contains("one-time password") || 
             b.contains("verification code") || b.contains("secret code") || b.contains("verification pin")
         ) {
+            return false
+        }
+
+        // 2. Telecom Operator Recharge Confirmation Receipts (Double counting blocker)
+        if (b.contains("credited to your") && (b.contains("airtel") || b.contains("jio") || b.contains("vi ") || b.contains("mobile") || b.contains("number"))) {
+            return false
+        }
+        if (b.contains("recharge") && (b.contains("credited") || b.contains("successful") || b.contains("success")) && 
+            (b.contains("validity has been extended") || b.contains("for your mobile") || b.contains("for your airtel") || b.contains("for your jio"))
+        ) {
+            return false
+        }
+
+        // 3. Bill generated / Invoice Alerts (liability reminders, not transactions)
+        if (b.contains("bill") && (b.contains("generated") || b.contains("has been generated") || b.contains("is generated"))) {
+            return false
+        }
+        if ((b.contains("amount to be paid") || b.contains("amount due") || b.contains("payment due") || b.contains("due date:")) &&
+            !b.contains("debited") && !b.contains("paid") && !b.contains("spent")
+        ) {
+            return false
+        }
+
+        // 4. Promotional/Discount Ads
+        if (b.contains("enjoy") && b.contains("off")) {
+            return false
+        }
+        if (b.contains("shop safely") || b.contains("open now") || b.contains("get up to") || b.contains("save up to") || b.contains("discount of")) {
+            return false
+        }
+        if (b.contains("test drive") || b.contains("book your test") || b.contains("deals you") || b.contains("attractive benefits") || b.contains("on-road funding")) {
+            return false
+        }
+        if (b.contains("emi/lakh") || b.contains("emi/") || b.contains("emi starting") || b.contains("book your")) {
             return false
         }
 

@@ -262,6 +262,9 @@ function AppContent() {
                 onPress={() => setActiveTab('AutoPay')}
                 activeOpacity={0.8}
               >
+                {isActive && (
+                  <View style={[styles.activeOuterBorder, { borderColor: colors.primary, borderTopColor: 'transparent' }]} />
+                )}
                 <View style={[styles.centerButton, { backgroundColor: colors.primary }]}>
                   {renderTabIcon('AutoPay', '#FFF')}
                 </View>
@@ -407,7 +410,7 @@ const styles = StyleSheet.create({
   },
   notchBackground: {
     position: 'absolute',
-    top: -20,
+    top: -15,
     left: '50%',
     width: 76,
     height: 38,
@@ -424,7 +427,7 @@ const styles = StyleSheet.create({
   },
   centerButton: {
     position: 'absolute',
-    top: -25,
+    top: -18,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -435,6 +438,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 5,
     elevation: 6,
+    zIndex: 2,
+  },
+  activeOuterBorder: {
+    position: 'absolute',
+    top: -23,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 2,
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   tabItem: {
     flex: 1,

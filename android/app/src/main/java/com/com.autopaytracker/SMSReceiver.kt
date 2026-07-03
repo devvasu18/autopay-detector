@@ -260,10 +260,11 @@ class SMSReceiver : BroadcastReceiver() {
             }
         }
 
+        var pendingResult: BroadcastReceiver.PendingResult? = null
         try {
-            val pendingResult = goAsync()
+            pendingResult = goAsync()
             var ttsInstance: TextToSpeech? = null
-            ttsInstance = TextToSpeech(context) { status ->
+            ttsInstance = TextToSpeech(context.applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
                     val locale = when (voiceLang) {
                         "hi" -> Locale("hi", "IN")
@@ -285,22 +286,23 @@ class SMSReceiver : BroadcastReceiver() {
                             override fun onStart(utteranceId: String?) {}
                             override fun onDone(utteranceId: String?) {
                                 t.shutdown()
-                                pendingResult.finish()
+                                pendingResult?.finish()
                             }
                             override fun onError(utteranceId: String?) {
                                 t.shutdown()
-                                pendingResult.finish()
+                                pendingResult?.finish()
                             }
                         })
                         val params = android.os.Bundle()
                         t.speak(text, TextToSpeech.QUEUE_FLUSH, params, "SMSReceiverTTS")
                     }
                 } else {
-                    pendingResult.finish()
+                    pendingResult?.finish()
                 }
             }
         } catch (e: Exception) {
             Log.e("SMSReceiver", "Error playing background TTS", e)
+            pendingResult?.finish()
         }
     }
 }

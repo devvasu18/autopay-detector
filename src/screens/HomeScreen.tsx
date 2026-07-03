@@ -11,7 +11,9 @@ import {
   DeviceEventEmitter,
   Modal,
   Switch,
+  AppState,
 } from 'react-native';
+import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction, AutoPay } from '../services/db';
 import { smsService } from '../services/smsService';
@@ -45,6 +47,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   });
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const [langModalVisible, setLangModalVisible] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('All Time');
+  const [periodModalVisible, setPeriodModalVisible] = useState(false);
 
   const languagesList = [
     { code: 'en', name: 'English', initial: 'E' },
@@ -71,6 +75,91 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
       case 'ml': return 'മലയാളം';
       case 'pa': return 'ਪੰਜਾਬੀ';
       default: return 'English';
+    }
+  };
+
+  const renderIconHelper = (iconName: string, color: string, size = 20) => {
+    switch (iconName) {
+      case 'card':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+            <Line x1="2" y1="10" x2="22" y2="10" />
+          </Svg>
+        );
+      case 'sync':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l.57-1.19" />
+          </Svg>
+        );
+      case 'clock':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Circle cx="12" cy="12" r="10" />
+            <Polyline points="12 6 12 12 16 14" />
+          </Svg>
+        );
+      case 'trend':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M23 6l-9.5 9.5-5-5L1 18M23 6h-6M23 6v6" />
+          </Svg>
+        );
+      case 'bulb':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+            <Path d="M9 18h6M10 22h4" />
+          </Svg>
+        );
+      case 'bell':
+      case 'soundbox':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </Svg>
+        );
+      case 'calendar':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <Line x1="16" y1="2" x2="16" y2="6" />
+            <Line x1="8" y1="2" x2="8" y2="6" />
+            <Line x1="3" y1="10" x2="21" y2="10" />
+          </Svg>
+        );
+      case 'ott':
+      case 'movie':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+            <Line x1="7" y1="2" x2="7" y2="22" />
+            <Line x1="17" y1="2" x2="17" y2="22" />
+            <Line x1="2" y1="12" x2="22" y2="12" />
+            <Line x1="2" y1="7" x2="7" y2="7" />
+            <Line x1="2" y1="17" x2="7" y2="17" />
+            <Line x1="17" y1="17" x2="22" y2="17" />
+            <Line x1="17" y1="7" x2="22" y2="7" />
+          </Svg>
+        );
+      case 'bank':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2L2 7h20L12 2z" />
+          </Svg>
+        );
+      case 'recharge':
+      case 'phone':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+            <Line x1="12" y1="18" x2="12" y2="18" />
+          </Svg>
+        );
+      default:
+        return null;
     }
   };
 
@@ -120,7 +209,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     const keyStr = `voice_${key}`;
     await db.setSetting(keyStr, newVal ? 'true' : 'false');
     setSoundboxSettings((prev) => ({ ...prev, [key]: newVal }));
-    
+
     // Play audio confirmation
     const lang = soundboxSettings.language;
     let text = '';
@@ -136,7 +225,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
       if (NativeModules.FinanceCoreModule && NativeModules.FinanceCoreModule.speak) {
         await NativeModules.FinanceCoreModule.speak(text, lang);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleSelectLanguage = async (langCode: string) => {
@@ -150,9 +239,27 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
 
 
 
-  const fetchStats = useCallback(async () => {
+  const getStartDateForPeriod = useCallback((period: string): number | undefined => {
+    const now = new Date();
+    switch (period) {
+      case 'Last 30 Days':
+        return Date.now() - 30 * 24 * 60 * 60 * 1000;
+      case 'This Month':
+        return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      case 'Last Month':
+        return new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+      case 'This Year':
+        return new Date(now.getFullYear(), 0, 1).getTime();
+      case 'All Time':
+      default:
+        return undefined;
+    }
+  }, []);
+
+  const fetchStats = useCallback(async (period: string = 'All Time') => {
     try {
-      const dbStats = await db.getStats();
+      const startTs = getStartDateForPeriod(period);
+      const dbStats = await db.getStats(startTs);
       setStats(dbStats);
 
       const autopays = await db.getAutoPays();
@@ -161,7 +268,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     } catch (err) {
       console.warn('Failed to load database stats', err);
     }
-  }, []);
+  }, [getStartDateForPeriod]);
 
   const checkPermissionState = useCallback(async () => {
     const isGranted = await smsService.checkPermission();
@@ -171,27 +278,44 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   const initData = useCallback(async () => {
     setLoading(true);
     await checkPermissionState();
-    await fetchStats();
+    await fetchStats(selectedPeriod);
     await loadVoiceSettings();
     setLoading(false);
-  }, [checkPermissionState, fetchStats, loadVoiceSettings]);
+  }, [checkPermissionState, fetchStats, loadVoiceSettings, selectedPeriod]);
 
   useEffect(() => {
     initData();
+  }, []);
 
+  useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('onNewTransaction', (eventData?: any) => {
-      fetchStats();
+      fetchStats(selectedPeriod);
     });
 
     return () => {
       subscription.remove();
     };
-  }, [initData, fetchStats]);
+  }, [fetchStats, selectedPeriod]);
+
+  useEffect(() => {
+    fetchStats(selectedPeriod);
+  }, [selectedPeriod, fetchStats]);
+
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkPermissionState();
+      }
+    });
+    return () => {
+      appStateSub.remove();
+    };
+  }, [checkPermissionState]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await checkPermissionState();
-    await fetchStats();
+    await fetchStats(selectedPeriod);
     await loadVoiceSettings();
     setRefreshing(false);
   };
@@ -201,6 +325,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     if (!isGranted) {
       const requested = await smsService.requestPermission();
       if (!requested) {
+        setHasPermission(false);
         Alert.alert(
           'Permission Required',
           'We need SMS reading permission to extract transaction receipts. Please enable it in Settings.',
@@ -211,9 +336,9 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
         );
         return;
       }
-      setHasPermission(true);
     }
 
+    setHasPermission(true);
     setLoading(true);
     try {
       const syncResult = await smsService.sync();
@@ -241,13 +366,12 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
-  // Quick Insights generator
   const getInsights = () => {
     const list = [];
     if (stats.totalExpense > 0) {
       list.push({
         id: 'spend_insight',
-        emoji: '💳',
+        icon: 'card',
         text: `You spent ${formatCurrency(stats.totalExpense)} this month.`,
         detail: stats.netSavings < 0 ? 'Your spending exceeds credit this month.' : 'Savings rate is looking healthy!',
       });
@@ -255,7 +379,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     if (stats.activeAutoPays > 0) {
       list.push({
         id: 'subs_insight',
-        emoji: '🔄',
+        icon: 'sync',
         text: `${stats.activeAutoPays} active autopay mandates detected.`,
         detail: 'Click AutoPay tab below to view app redirection portals.',
       });
@@ -266,7 +390,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     if (upcoming) {
       list.push({
         id: 'upcoming_insight',
-        emoji: '⏰',
+        icon: 'clock',
         text: `Your ${upcoming.merchant} payment of ${formatCurrency(upcoming.amount)} renews soon.`,
         detail: `Next debit expected on ${formatDate(upcoming.next_expected_payment)}.`,
       });
@@ -275,7 +399,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     if (stats.largestExpense) {
       list.push({
         id: 'large_expense',
-        emoji: '🔥',
+        icon: 'trend',
         text: `Largest expense was ${formatCurrency(stats.largestExpense.amount)} at ${stats.largestExpense.merchant}.`,
         detail: `Occurred on ${formatDate(stats.largestExpense.date)}.`,
       });
@@ -284,7 +408,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     if (list.length === 0) {
       list.push({
         id: 'no_data',
-        emoji: '💡',
+        icon: 'bulb',
         text: 'No insights available yet.',
         detail: 'Trigger SMS Sync or go to Settings to seed sample data.',
       });
@@ -295,13 +419,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Welcome Back,</Text>
-          <Text style={[styles.title, { color: colors.text }]}>AutoPay Tracker</Text>
-        </View>
-      </View>
+
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -317,7 +435,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
         >
           <View style={styles.soundboxHeaderRow}>
             <View style={styles.soundboxIconWrapper}>
-              <Text style={styles.soundboxIcon}>📢</Text>
+              {renderIconHelper('bell', colors.primary)}
             </View>
             <View style={styles.soundboxInfo}>
               <Text style={[styles.soundboxTitle, { color: colors.text }]}>Soundbox Alert</Text>
@@ -331,15 +449,15 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             <TouchableOpacity
               style={[
                 styles.soundboxPill,
-                soundboxSettings.credit 
-                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary } 
+                soundboxSettings.credit
+                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary }
                   : { backgroundColor: colors.surface, borderColor: colors.border }
               ]}
               onPress={() => handleToggleVoice('credit', soundboxSettings.credit)}
             >
-              <Text 
+              <Text
                 style={[
-                  styles.soundboxPillText, 
+                  styles.soundboxPillText,
                   { color: soundboxSettings.credit ? colors.primary : colors.textSecondary }
                 ]}
               >
@@ -350,15 +468,15 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             <TouchableOpacity
               style={[
                 styles.soundboxPill,
-                soundboxSettings.debit 
-                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary } 
+                soundboxSettings.debit
+                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary }
                   : { backgroundColor: colors.surface, borderColor: colors.border }
               ]}
               onPress={() => handleToggleVoice('debit', soundboxSettings.debit)}
             >
-              <Text 
+              <Text
                 style={[
-                  styles.soundboxPillText, 
+                  styles.soundboxPillText,
                   { color: soundboxSettings.debit ? colors.primary : colors.textSecondary }
                 ]}
               >
@@ -369,15 +487,15 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             <TouchableOpacity
               style={[
                 styles.soundboxPill,
-                soundboxSettings.upcoming 
-                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary } 
+                soundboxSettings.upcoming
+                  ? { backgroundColor: colors.primaryContainer, borderColor: colors.primary }
                   : { backgroundColor: colors.surface, borderColor: colors.border }
               ]}
               onPress={() => handleToggleVoice('upcoming', soundboxSettings.upcoming)}
             >
-              <Text 
+              <Text
                 style={[
-                  styles.soundboxPillText, 
+                  styles.soundboxPillText,
                   { color: soundboxSettings.upcoming ? colors.primary : colors.textSecondary }
                 ]}
               >
@@ -405,6 +523,80 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
           </View>
         )}
 
+        {/* Total Spend & Date Range Card */}
+        <View style={[styles.horizontalStatsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View>
+            <Text style={[styles.horizontalCardLabel, { color: colors.textSecondary }]}>
+              Total Debit Spend
+            </Text>
+            <Text style={[styles.horizontalCardValue, { color: colors.text }]}>
+              {formatCurrency(stats.totalExpense)}
+            </Text>
+          </View>
+          
+          <TouchableOpacity
+            style={[styles.dateRangeSelector, { backgroundColor: colors.isDark ? '#3A3A3C' : '#E5E5EA', borderColor: colors.border }]}
+            onPress={() => setPeriodModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {renderIconHelper('calendar', colors.text, 14)}
+              <Text style={[styles.dateRangeText, { color: colors.text, marginLeft: 6 }]}>
+                {selectedPeriod} ▾
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Date Period Selector Modal */}
+        <Modal
+          visible={periodModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setPeriodModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setPeriodModalVisible(false)}
+          >
+            <View style={[styles.periodModalContent, { backgroundColor: colors.card }]}>
+              <Text style={[styles.periodModalTitle, { color: colors.text }]}>Select Period</Text>
+              <View style={styles.periodList}>
+                {['All Time', 'Last 30 Days', 'This Month', 'Last Month', 'This Year'].map((period) => {
+                  const isSelected = selectedPeriod === period;
+                  return (
+                    <TouchableOpacity
+                      key={period}
+                      style={[
+                        styles.periodItem,
+                        isSelected && { backgroundColor: colors.isDark ? '#2c2c2e' : '#e5f6ff' }
+                      ]}
+                      onPress={() => {
+                        setSelectedPeriod(period);
+                        setPeriodModalVisible(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.periodItemText,
+                          { color: isSelected ? colors.primary : colors.text },
+                          isSelected && { fontWeight: 'bold' }
+                        ]}
+                      >
+                        {period}
+                      </Text>
+                      {isSelected && (
+                        <Text style={[styles.periodCheckmark, { color: colors.primary }]}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
         {/* Dashboard Core Stats Cards - 4 Modern Grid Cards */}
         <View style={styles.gridContainer}>
           <View style={styles.gridRow}>
@@ -418,8 +610,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               }
             ]}>
               <View style={styles.cardIconHeader}>
-                <Text style={styles.cardIconEmoji}>🎬</Text>
-                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#D8B4FE' : '#6B21A8' }]}>OTT</Text>
+                {renderIconHelper('ott', colors.isDark ? '#D8B4FE' : '#6B21A8')}
+                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#D8B4FE' : '#6B21A8', marginLeft: 8 }]}>OTT</Text>
               </View>
               <Text style={[styles.cardValueText, { color: colors.isDark ? '#F3E8FF' : '#4C1D95' }]}>
                 {formatCurrency(stats.ottSpend)}
@@ -439,8 +631,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               }
             ]}>
               <View style={styles.cardIconHeader}>
-                <Text style={styles.cardIconEmoji}>🔄</Text>
-                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#81E6D9' : '#007769' }]}>Autopay</Text>
+                {renderIconHelper('sync', colors.isDark ? '#81E6D9' : '#007769')}
+                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#81E6D9' : '#007769', marginLeft: 8 }]}>Autopay</Text>
               </View>
               <Text style={[styles.cardValueText, { color: colors.isDark ? '#E6FFFA' : '#004D40' }]}>
                 {formatCurrency(stats.autopaySpend)}
@@ -462,8 +654,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               }
             ]}>
               <View style={styles.cardIconHeader}>
-                <Text style={styles.cardIconEmoji}>🏦</Text>
-                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#90CDF4' : '#1A365D' }]}>Bank</Text>
+                {renderIconHelper('bank', colors.isDark ? '#90CDF4' : '#1A365D')}
+                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#90CDF4' : '#1A365D', marginLeft: 8 }]}>Bank</Text>
               </View>
               <Text style={[styles.cardValueText, { color: colors.isDark ? '#EBF8FF' : '#0B3C5D' }]}>
                 {formatCurrency(stats.bankSpend)}
@@ -483,8 +675,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               }
             ]}>
               <View style={styles.cardIconHeader}>
-                <Text style={styles.cardIconEmoji}>📱</Text>
-                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#FEB2B2' : '#9B2C2C' }]}>Recharge</Text>
+                {renderIconHelper('recharge', colors.isDark ? '#FEB2B2' : '#9B2C2C')}
+                <Text style={[styles.cardTitleText, { color: colors.isDark ? '#FEB2B2' : '#9B2C2C', marginLeft: 8 }]}>Recharge</Text>
               </View>
               <Text style={[styles.cardValueText, { color: colors.isDark ? '#FFF5F5' : '#7B1515' }]}>
                 {formatCurrency(stats.rechargeSpend)}
@@ -583,7 +775,9 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Quick Insights</Text>
           {getInsights().map((insight) => (
             <View key={insight.id} style={[styles.insightCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={styles.insightEmoji}>{insight.emoji}</Text>
+              <View style={styles.insightIconContainer}>
+                {renderIconHelper(insight.icon, colors.primary)}
+              </View>
               <View style={styles.insightContent}>
                 <Text style={[styles.insightText, { color: colors.text }]}>{insight.text}</Text>
                 <Text style={[styles.insightDetail, { color: colors.textSecondary }]}>{insight.detail}</Text>
@@ -728,10 +922,10 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
                     ]}
                     onPress={() => handleSelectLanguage(lang.code)}
                   >
-                    <View 
+                    <View
                       style={[
                         styles.langInitialBadge,
-                        { 
+                        {
                           backgroundColor: isSelected ? colors.primary : colors.surfaceVariant,
                         }
                       ]}
@@ -936,8 +1130,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'center',
   },
-  insightEmoji: {
-    fontSize: 24,
+  insightIconContainer: {
     marginRight: 16,
   },
   insightContent: {
@@ -1167,5 +1360,79 @@ const styles = StyleSheet.create({
   langNameText: {
     fontSize: 12,
     textAlign: 'center',
+  },
+  horizontalStatsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  horizontalCardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  horizontalCardValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  dateRangeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  dateRangeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  periodModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  periodModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  periodList: {
+    marginBottom: 8,
+  },
+  periodItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  periodItemText: {
+    fontSize: 15,
+  },
+  periodCheckmark: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -104,33 +104,9 @@ export const ProfileScreen: React.FC = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Security Banner */}
-        <View style={[styles.securityCard, { backgroundColor: colors.primaryContainer }]}>
-          <Text style={[styles.securityTitle, { color: colors.primary }]}>🔒 100% Privacy Secure</Text>
-          <Text style={[styles.securityText, { color: colors.primary }]}>
-            All SMS processing and analysis happens locally on this device. We never upload your text
-            messages or financial profiles to the cloud.
-          </Text>
-        </View>
 
-        {/* Database Stats Section */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Local Data Bank</Text>
-        <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.statRow}>
-            <Text style={[styles.statLabel, { color: colors.text }]}>Raw SMS Processed</Text>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.rawSmsCount}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statRow}>
-            <Text style={[styles.statLabel, { color: colors.text }]}>Transactions Indexed</Text>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.txCount}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statRow}>
-            <Text style={[styles.statLabel, { color: colors.text }]}>AutoPay Mandates</Text>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.autopayCount}</Text>
-          </View>
-        </View>
+
+
 
         {/* Configuration settings */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
@@ -147,19 +123,6 @@ export const ProfileScreen: React.FC = () => {
 
           <View style={styles.statDivider} />
 
-          <View style={styles.settingItem}>
-            <View style={{ flex: 1, marginRight: 16 }}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>SMS Inbox Access</Text>
-              <Text style={[styles.settingSubLabel, { color: colors.textSecondary }]}>
-                Analyze text receipts locally
-              </Text>
-            </View>
-            <Switch
-              value={!!hasPermission}
-              onValueChange={handlePermissionToggle}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
         </View>
 
         {/* Development utilities */}
@@ -173,7 +136,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={[styles.actionBtnText, { color: colors.textRed }]}>🗑️ Wipe Database</Text>
           </TouchableOpacity>
         </View>
-        
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>

@@ -82,7 +82,7 @@ export const db = {
     );
   },
 
-  getStats: async () => {
+  getStats: async (startDate?: number) => {
     // Healing migration for existing incorrect category entries
     try {
       await db.execute(`
@@ -99,11 +99,72 @@ export const db = {
       console.warn('Healing category migration failed:', e);
     }
 
+    // Retroactive cleanup of legacy incorrect transactions (operator receipts, statement alerts, discount ads)
+    try {
+      await db.execute(`
+        DELETE FROM transactions 
+        WHERE 
+          (
+            raw_body LIKE '%credited to your%airtel%'
+            OR raw_body LIKE '%credited to your%jio%'
+            OR raw_body LIKE '%credited to your%vi%'
+            OR (raw_body LIKE '%recharge%' AND raw_body LIKE '%credited%' AND raw_body LIKE '%validity%')
+            OR (raw_body LIKE '%recharge%' AND raw_body LIKE '%successful%' AND raw_body LIKE '%for your%')
+          )
+          OR 
+          (
+            (raw_body LIKE '%bill%' AND (raw_body LIKE '%generated%' OR raw_body LIKE '%has been generated%'))
+            AND raw_body NOT LIKE '%debited%'
+            AND raw_body NOT LIKE '%paid%'
+            AND raw_body NOT LIKE '%spent%'
+          )
+          OR
+          (
+            (raw_body LIKE '%amount to be paid%' OR raw_body LIKE '%amount due%' OR raw_body LIKE '%due date:%' OR raw_body LIKE '%due date is%')
+            AND raw_body NOT LIKE '%debited%'
+            AND raw_body NOT LIKE '%paid%'
+            AND raw_body NOT LIKE '%spent%'
+          )
+          OR
+          (
+            (raw_body LIKE '%enjoy%' AND raw_body LIKE '%off%')
+            AND raw_body NOT LIKE '%debited%'
+            AND raw_body NOT LIKE '%paid%'
+            AND raw_body NOT LIKE '%spent%'
+          )
+          OR
+          (
+            (raw_body LIKE '%shop safely%' OR raw_body LIKE '%open now%')
+            AND raw_body NOT LIKE '%debited%'
+            AND raw_body NOT LIKE '%paid%'
+            AND raw_body NOT LIKE '%spent%'
+          )
+          OR
+          (
+            (raw_body LIKE '%test drive%' OR raw_body LIKE '%attractive benefits%' OR raw_body LIKE '%deals you%miss%' OR raw_body LIKE '%emi/lakh%' OR raw_body LIKE '%on-road funding%')
+            AND raw_body NOT LIKE '%debited%'
+            AND raw_body NOT LIKE '%paid%'
+            AND raw_body NOT LIKE '%spent%'
+          )
+      `);
+    } catch (e) {
+      console.warn('Retroactive clean-up migration failed:', e);
+    }
+
+    let dateCond = '';
+    const params: any[] = [];
+    if (startDate) {
+      dateCond = ' AND date >= ?';
+      params.push(startDate);
+    }
+
     const incomeRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'CREDIT'"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'CREDIT'" + dateCond,
+      params
     );
     const expenseRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT'"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT'" + dateCond,
+      params
     );
     const activeAutoPayRes = await db.execute(
       "SELECT COUNT(*) as count FROM autopay WHERE status = 'Active'"
@@ -112,23 +173,29 @@ export const db = {
       "SELECT COUNT(*) as count FROM autopay"
     );
     const largestExpenseRes = await db.execute(
-      "SELECT merchant, amount, date FROM transactions WHERE type = 'DEBIT' ORDER BY amount DESC LIMIT 1"
+      "SELECT merchant, amount, date FROM transactions WHERE type = 'DEBIT'" + dateCond + " ORDER BY amount DESC LIMIT 1",
+      params
     );
     const recentTxRes = await db.execute(
-      "SELECT * FROM transactions ORDER BY date DESC LIMIT 5"
+      "SELECT * FROM transactions" + (startDate ? " WHERE date >= ?" : "") + " ORDER BY date DESC LIMIT 5",
+      startDate ? [startDate] : []
     );
 
     const ottRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Subscription'"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Subscription'" + dateCond,
+      params
     );
     const autopayRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND sms_id IN (SELECT DISTINCT sms_id FROM autopay)"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND sms_id IN (SELECT DISTINCT sms_id FROM autopay)" + dateCond,
+      params
     );
     const bankRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND (payment_method = 'Bank Transfer' OR category = 'Loan / EMI')"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND (payment_method = 'Bank Transfer' OR category = 'Loan / EMI')" + dateCond,
+      params
     );
     const rechargeRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Recharge'"
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Recharge'" + dateCond,
+      params
     );
 
     const totalIncome = incomeRes[0]?.total || 0;
