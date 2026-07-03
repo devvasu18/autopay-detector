@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction } from '../services/db';
+import { MerchantLogo } from '../components/MerchantLogo';
 
 export const TransactionsScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -170,19 +171,7 @@ export const TransactionsScreen: React.FC = () => {
   const renderTxItem = ({ item }: { item: Transaction }) => (
     <View style={[styles.txCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.txIconContainer}>
-        <View
-          style={[
-            styles.txIcon,
-            {
-              backgroundColor:
-                item.type === 'CREDIT' ? colors.success + '15' : colors.primary + '15',
-            },
-          ]}
-        >
-          <Text style={{ color: item.type === 'CREDIT' ? colors.textGreen : colors.primary }}>
-            {item.type === 'CREDIT' ? '↙' : '↗'}
-          </Text>
-        </View>
+        <MerchantLogo name={item.merchant} size={40} />
       </View>
       <View style={styles.txDetails}>
         <Text style={[styles.txMerchant, { color: colors.text }]} numberOfLines={1}>

@@ -14,6 +14,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { db, AutoPay } from '../services/db';
 import { smsService } from '../services/smsService';
+import { MerchantLogo } from '../components/MerchantLogo';
 
 export const AutoPayScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -193,7 +194,10 @@ export const AutoPayScreen: React.FC = () => {
             >
               {/* Top Row */}
               <View style={styles.row}>
-                <Text style={[styles.merchantName, { color: colors.text }]}>{ap.merchant}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MerchantLogo name={ap.merchant} size={28} />
+                  <Text style={[styles.merchantName, { color: colors.text, marginLeft: 10 }]}>{ap.merchant}</Text>
+                </View>
                 <View
                   style={[
                     styles.statusBadge,

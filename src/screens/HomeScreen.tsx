@@ -17,6 +17,7 @@ import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { db, Transaction, AutoPay } from '../services/db';
 import { smsService } from '../services/smsService';
+import { MerchantLogo } from '../components/MerchantLogo';
 
 export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   const { colors } = useTheme();
@@ -738,11 +739,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             stats.recentTransactions.map((tx) => (
               <View key={tx.id} style={[styles.txCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.txIconContainer}>
-                  <View style={[styles.txIcon, { backgroundColor: tx.type === 'CREDIT' ? colors.success + '20' : colors.primary + '15' }]}>
-                    <Text style={{ color: tx.type === 'CREDIT' ? colors.textGreen : colors.primary }}>
-                      {tx.type === 'CREDIT' ? '↙' : '↗'}
-                    </Text>
-                  </View>
+                  <MerchantLogo name={tx.merchant} size={40} />
                 </View>
                 <View style={styles.txDetails}>
                   <Text style={[styles.txMerchant, { color: colors.text }]} numberOfLines={1}>

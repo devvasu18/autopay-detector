@@ -205,6 +205,7 @@ object FinanceParser {
 
         var merchant = "Unknown Merchant"
         val merchantPatterns = listOf(
+            Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30})\\s*(?:is|was|has|on|ref|via|any)"),
             Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20})\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
             Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("debited\\s+at\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
