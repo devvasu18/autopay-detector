@@ -10,6 +10,7 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
+import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -182,12 +183,57 @@ function AppContent() {
     }
   };
 
+  const renderTabIcon = (key: string, color: string, size = 20) => {
+    switch (key) {
+      case 'Home':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <Polyline points="9 22 9 12 15 12 15 22" />
+          </Svg>
+        );
+      case 'Transactions':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+            <Line x1="2" y1="10" x2="22" y2="10" />
+          </Svg>
+        );
+      case 'AutoPay':
+        return (
+          <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M17 1l4 4-4 4" />
+            <Path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <Path d="M7 23l-4-4 4-4" />
+            <Path d="M21 13v2a4 4 0 0 1-4 4H3" />
+          </Svg>
+        );
+      case 'Analytics':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Line x1="18" y1="20" x2="18" y2="10" />
+            <Line x1="12" y1="20" x2="12" y2="4" />
+            <Line x1="6" y1="20" x2="6" y2="14" />
+          </Svg>
+        );
+      case 'Profile':
+        return (
+          <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <Circle cx="12" cy="7" r="4" />
+          </Svg>
+        );
+      default:
+        return null;
+    }
+  };
+
   const tabs = [
-    { key: 'Home', label: 'Home', icon: '🏠' },
-    { key: 'AutoPay', label: 'AutoPay', icon: '🔄' },
-    { key: 'Transactions', label: 'Transactions', icon: '💳' },
-    { key: 'Analytics', label: 'Analytics', icon: '📊' },
-    { key: 'Profile', label: 'Profile', icon: '👤' },
+    { key: 'Home', label: 'Home' },
+    { key: 'Transactions', label: 'Transactions' },
+    { key: 'AutoPay', label: 'AutoPay' },
+    { key: 'Analytics', label: 'Analytics' },
+    { key: 'Profile', label: 'Profile' },
   ] as const;
 
   return (
@@ -202,8 +248,27 @@ function AppContent() {
 
       {/* Custom Bottom Navigation Bar */}
       <View style={[styles.tabBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        {/* Curved dome background for center floating button */}
+        <View style={[styles.notchBackground, { backgroundColor: colors.card }]} />
+
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
+
+          if (tab.key === 'AutoPay') {
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={styles.centerTabItem}
+                onPress={() => setActiveTab('AutoPay')}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.centerButton, { backgroundColor: colors.primary }]}>
+                  {renderTabIcon('AutoPay', '#FFF')}
+                </View>
+              </TouchableOpacity>
+            );
+          }
+
           return (
             <TouchableOpacity
               key={tab.key}
@@ -211,15 +276,19 @@ function AppContent() {
               onPress={() => setActiveTab(tab.key)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabIcon, { opacity: isActive ? 1 : 0.6 }]}>
-                {tab.icon}
-              </Text>
+              {isActive && (
+                <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
+              )}
+              <View style={styles.tabIconContainer}>
+                {renderTabIcon(tab.key, isActive ? colors.primary : colors.textSecondary)}
+              </View>
               <Text
                 style={[
                   styles.tabLabel,
                   {
                     color: isActive ? colors.primary : colors.textSecondary,
                     fontWeight: isActive ? 'bold' : 'normal',
+                    marginTop: 4,
                   },
                 ]}
               >
@@ -326,22 +395,66 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    height: 60,
+    height: 65,
     borderTopWidth: 1,
     elevation: 8,
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: -2 },
     shadowRadius: 4,
-    paddingBottom: 4,
+    paddingBottom: 5,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  notchBackground: {
+    position: 'absolute',
+    top: -20,
+    left: '50%',
+    width: 76,
+    height: 38,
+    borderTopLeftRadius: 38,
+    borderTopRightRadius: 38,
+    marginLeft: -38,
+    elevation: 0,
+  },
+  centerTabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  centerButton: {
+    position: 'absolute',
+    top: -25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2196F3',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 5,
+    elevation: 6,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    height: '100%',
   },
-  tabIcon: {
-    fontSize: 20,
-    marginBottom: 2,
+  tabIconContainer: {
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: 28,
+    height: 3,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
   },
   tabLabel: {
     fontSize: 10,

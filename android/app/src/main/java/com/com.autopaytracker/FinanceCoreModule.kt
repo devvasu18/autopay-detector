@@ -268,31 +268,31 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
                                     stmtTx.executeInsert()
 
                                      if (parsed.isAutoPay) {
-                                         val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant)
+                                         val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant, parsed.amount)
                                          if (existingFirst > 0) {
-                                             val existingLast = FinanceParser.queryAutoPayLastPayment(db, parsed.merchant)
+                                             val existingLast = FinanceParser.queryAutoPayLastPayment(db, parsed.merchant, parsed.amount)
                                              val newFirst = if (parsed.date < existingFirst) parsed.date else existingFirst
                                              val newLast = if (parsed.date > existingLast) parsed.date else existingLast
 
                                              val stmtUpdate = db.compileStatement("""
                                                  UPDATE autopay SET 
-                                                     amount = ?, frequency = ?, bank = ?, upi_id = ?, status = ?, 
+                                                     frequency = ?, bank = ?, upi_id = ?, status = ?, 
                                                      first_detected = ?, last_payment = ?, next_expected_payment = ?, 
                                                      sms_id = ?, raw_body = ?
-                                                 WHERE merchant = ?
+                                                 WHERE merchant = ? AND amount = ?
                                              """)
-                                             stmtUpdate.bindDouble(1, parsed.amount)
-                                             stmtUpdate.bindString(2, parsed.frequency)
-                                             stmtUpdate.bindString(3, parsed.bank)
-                                             stmtUpdate.bindString(4, parsed.upiId)
-                                             stmtUpdate.bindString(5, parsed.autoPayStatus)
-                                             stmtUpdate.bindLong(6, newFirst)
-                                             stmtUpdate.bindLong(7, newLast)
+                                             stmtUpdate.bindString(1, parsed.frequency)
+                                             stmtUpdate.bindString(2, parsed.bank)
+                                             stmtUpdate.bindString(3, parsed.upiId)
+                                             stmtUpdate.bindString(4, parsed.autoPayStatus)
+                                             stmtUpdate.bindLong(5, newFirst)
+                                             stmtUpdate.bindLong(6, newLast)
                                              val nextPayment = newLast + (30L * 24L * 60L * 60L * 1000L)
-                                             stmtUpdate.bindLong(8, nextPayment)
-                                             stmtUpdate.bindString(9, parsed.smsId)
-                                             stmtUpdate.bindString(10, parsed.rawBody)
-                                             stmtUpdate.bindString(11, parsed.merchant)
+                                             stmtUpdate.bindLong(7, nextPayment)
+                                             stmtUpdate.bindString(8, parsed.smsId)
+                                             stmtUpdate.bindString(9, parsed.rawBody)
+                                             stmtUpdate.bindString(10, parsed.merchant)
+                                             stmtUpdate.bindDouble(11, parsed.amount)
                                              stmtUpdate.executeUpdateDelete()
                                          } else {
                                              val stmtAuto = db.compileStatement("""
@@ -371,6 +371,7 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
         }
 
         tts?.let { t ->
+            t.setSpeechRate(0.8f)
             val result = t.setLanguage(locale)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 promise.reject("LANG_NOT_SUPPORTED", "Language $languageCode is not supported")

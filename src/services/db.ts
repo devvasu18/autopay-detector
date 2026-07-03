@@ -77,12 +77,28 @@ export const db = {
               MAX(last_payment) as last_payment, 
               next_expected_payment, sms_id, raw_body 
        FROM autopay 
-       GROUP BY merchant 
+       GROUP BY merchant, amount 
        ORDER BY last_payment DESC`
     );
   },
 
   getStats: async () => {
+    // Healing migration for existing incorrect category entries
+    try {
+      await db.execute(`
+        UPDATE transactions 
+        SET category = 'Insurance' 
+        WHERE category = 'Recharge' 
+          AND (
+            raw_body LIKE '%lic%' 
+            OR raw_body LIKE '%insurance%' 
+            OR (raw_body LIKE '%premium%' AND raw_body NOT LIKE '%spotify%' AND raw_body NOT LIKE '%youtube%' AND raw_body NOT LIKE '%netflix%' AND raw_body NOT LIKE '%prime%')
+          )
+      `);
+    } catch (e) {
+      console.warn('Healing category migration failed:', e);
+    }
+
     const incomeRes = await db.execute(
       "SELECT SUM(amount) as total FROM transactions WHERE type = 'CREDIT'"
     );

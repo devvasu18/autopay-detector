@@ -8,6 +8,10 @@ import android.util.Log
 import java.util.UUID
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.WritableMap
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import android.database.sqlite.SQLiteDatabase
+import java.util.Locale
 
 class SMSReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -56,31 +60,31 @@ class SMSReceiver : BroadcastReceiver() {
                             stmtTx.executeInsert()
 
                             if (parsed.isAutoPay) {
-                                val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant)
+                                val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant, parsed.amount)
                                 if (existingFirst > 0) {
-                                    val existingLast = FinanceParser.queryAutoPayLastPayment(db, parsed.merchant)
+                                    val existingLast = FinanceParser.queryAutoPayLastPayment(db, parsed.merchant, parsed.amount)
                                     val newFirst = if (parsed.date < existingFirst) parsed.date else existingFirst
                                     val newLast = if (parsed.date > existingLast) parsed.date else existingLast
 
                                     val stmtUpdate = db.compileStatement("""
                                         UPDATE autopay SET 
-                                            amount = ?, frequency = ?, bank = ?, upi_id = ?, status = ?, 
+                                            frequency = ?, bank = ?, upi_id = ?, status = ?, 
                                             first_detected = ?, last_payment = ?, next_expected_payment = ?, 
                                             sms_id = ?, raw_body = ?
-                                        WHERE merchant = ?
+                                        WHERE merchant = ? AND amount = ?
                                     """)
-                                    stmtUpdate.bindDouble(1, parsed.amount)
-                                    stmtUpdate.bindString(2, parsed.frequency)
-                                    stmtUpdate.bindString(3, parsed.bank)
-                                    stmtUpdate.bindString(4, parsed.upiId)
-                                    stmtUpdate.bindString(5, parsed.autoPayStatus)
-                                    stmtUpdate.bindLong(6, newFirst)
-                                    stmtUpdate.bindLong(7, newLast)
+                                    stmtUpdate.bindString(1, parsed.frequency)
+                                    stmtUpdate.bindString(2, parsed.bank)
+                                    stmtUpdate.bindString(3, parsed.upiId)
+                                    stmtUpdate.bindString(4, parsed.autoPayStatus)
+                                    stmtUpdate.bindLong(5, newFirst)
+                                    stmtUpdate.bindLong(6, newLast)
                                     val nextPayment = newLast + (30L * 24L * 60L * 60L * 1000L)
-                                    stmtUpdate.bindLong(8, nextPayment)
-                                    stmtUpdate.bindString(9, parsed.smsId)
-                                    stmtUpdate.bindString(10, parsed.rawBody)
-                                    stmtUpdate.bindString(11, parsed.merchant)
+                                    stmtUpdate.bindLong(7, nextPayment)
+                                    stmtUpdate.bindString(8, parsed.smsId)
+                                    stmtUpdate.bindString(9, parsed.rawBody)
+                                    stmtUpdate.bindString(10, parsed.merchant)
+                                    stmtUpdate.bindDouble(11, parsed.amount)
                                     stmtUpdate.executeUpdateDelete()
                                 } else {
                                     val stmtAuto = db.compileStatement("""
@@ -112,12 +116,191 @@ class SMSReceiver : BroadcastReceiver() {
                             params.putString("category", parsed.category)
                             params.putBoolean("isAutoPay", parsed.isAutoPay)
                             FinanceCoreModule.instance?.sendEvent("onNewTransaction", params)
+                            speakTransactionInBackground(context, db, parsed)
                         }
                     }
                 } catch (e: Exception) {
                     Log.e("SMSReceiver", "Error processing incoming SMS", e)
                 }
             }
+        }
+    }
+
+    private fun querySetting(db: SQLiteDatabase, key: String, defaultValue: String): String {
+        var value = defaultValue
+        try {
+            db.execSQL("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+            val cursor = db.rawQuery("SELECT value FROM settings WHERE key = ?", arrayOf(key))
+            if (cursor.moveToFirst()) {
+                value = cursor.getString(0) ?: defaultValue
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            Log.e("SMSReceiver", "Error querying setting $key", e)
+        }
+        return value
+    }
+
+    private fun speakTransactionInBackground(context: Context, db: SQLiteDatabase, tx: FinanceParser.ParsedSMS) {
+        val voiceCredit = querySetting(db, "voice_credit", "true") == "true"
+        val voiceDebit = querySetting(db, "voice_debit", "true") == "true"
+        val voiceUpcoming = querySetting(db, "voice_upcoming", "true") == "true"
+        val voiceLang = querySetting(db, "voice_language", "en")
+
+        var shouldSpeak = false
+        var isUpcoming = tx.isAutoPay && tx.type == "DEBIT"
+
+        if (tx.type == "CREDIT" && voiceCredit) {
+            shouldSpeak = true
+        } else if (tx.type == "DEBIT") {
+            if (tx.isAutoPay && voiceUpcoming) {
+                shouldSpeak = true
+                isUpcoming = true
+            } else if (voiceDebit) {
+                shouldSpeak = true
+            }
+        }
+
+        if (!shouldSpeak) return
+
+        val amount = tx.amount.toInt()
+        val merchant = tx.merchant
+        var text = ""
+
+        when (voiceLang) {
+            "hi" -> {
+                text = if (isUpcoming) {
+                    "याद दिलाएं: $merchant के लिए $amount रुपये का आगामी भुगतान"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant से $amount रुपये प्राप्त हुए"
+                } else {
+                    "$merchant को $amount रुपये का भुगतान किया गया"
+                }
+            }
+            "kn" -> {
+                text = if (isUpcoming) {
+                    "ನೆನಪೋಲೆ: $merchant ಗಾಗಿ $amount ರೂಪಾಯಿ ಮುಂಬರುವ ಪಾವತಿ"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant ನಿಂದ $amount ರೂಪಾಯಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ"
+                } else {
+                    "$merchant ಗೆ $amount ರೂಪಾಯಿ ಪಾವತಿಸಲಾಗಿದೆ"
+                }
+            }
+            "ta" -> {
+                text = if (isUpcoming) {
+                    "நினைவூட்டல்: $merchant க்கான $amount ரூபாய் வரவிருக்கும் கட்டணம்"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant இடமிருந்து $amount ரூபாய் பெறப்பட்டது"
+                } else {
+                    "$merchant க்கு $amount ரூபாய் செலுத்தப்பட்டது"
+                }
+            }
+            "te" -> {
+                text = if (isUpcoming) {
+                    "రిమైండర్: $merchant కోసం $amount రూపాయల రాబోయే చెల్లింపు"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant నుండి $amount రూపాయలు స్వీకరించబడింది"
+                } else {
+                    "$merchant కి $amount రూపాయలు చెల్లించబడింది"
+                }
+            }
+            "mr" -> {
+                text = if (isUpcoming) {
+                    "स्मरणपत्र: $merchant साठी $amount रुपयांचे आगामी पेमेंट"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant कडून $amount रुपये प्राप्त झाले"
+                } else {
+                    "$merchant ला $amount रुपयांचे पेमेंट केले"
+                }
+            }
+            "gu" -> {
+                text = if (isUpcoming) {
+                    "રિમાઇન્ડર: $merchant માટે $amount રૂપિયાની આગામી ચુકવણી"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant તરફથી $amount રૂપિયા મળ્યા"
+                } else {
+                    "$merchant ને $amount રૂપિયા ચૂકવવામાં આવ્યા"
+                }
+            }
+            "bn" -> {
+                text = if (isUpcoming) {
+                    "রিমাইন্ডার: $merchant এর জন্য $amount টাকার আসন্ন পেমেন্ট"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant থেকে $amount টাকা পাওয়া গেছে"
+                } else {
+                    "$merchant কে $amount টাকা প্রদান করা হয়েছে"
+                }
+            }
+            "ml" -> {
+                text = if (isUpcoming) {
+                    "ഓർമ്മപ്പെടുത്തൽ: $merchant ലേക്കുള്ള $amount രൂപയുടെ വരാനിരിക്കുന്ന പേയ്‌മെന്റ്"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant ൽ നിന്ന് $amount രൂപ ലഭിച്ചു"
+                } else {
+                    "$merchant ലേക്ക് $amount രൂപ അടച്ചു"
+                }
+            }
+            "pa" -> {
+                text = if (isUpcoming) {
+                    "ਯਾਦ ਦਿਵਾਓ: $merchant ਲਈ $amount ਰੁਪਏ ਦਾ ਆਉਣ ਵਾਲਾ ਭੁਗਤਾਨ"
+                } else if (tx.type == "CREDIT") {
+                    "$merchant ਤੋਂ $amount ਰੁਪਏ ਪ੍ਰਾਪਤ ਹੋਏ"
+                } else {
+                    "$merchant ਨੂੰ $amount ਰੁਪਏ ਦਾ ਭੁਗਤਾਨ ਕੀਤਾ ਗਿਆ"
+                }
+            }
+            else -> { // en
+                text = if (isUpcoming) {
+                    "Reminder: Upcoming payment of rupees $amount for $merchant"
+                } else if (tx.type == "CREDIT") {
+                    "Received rupees $amount from $merchant"
+                } else {
+                    "Paid rupees $amount to $merchant"
+                }
+            }
+        }
+
+        try {
+            val pendingResult = goAsync()
+            var ttsInstance: TextToSpeech? = null
+            ttsInstance = TextToSpeech(context) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    val locale = when (voiceLang) {
+                        "hi" -> Locale("hi", "IN")
+                        "kn" -> Locale("kn", "IN")
+                        "ta" -> Locale("ta", "IN")
+                        "te" -> Locale("te", "IN")
+                        "mr" -> Locale("mr", "IN")
+                        "gu" -> Locale("gu", "IN")
+                        "bn" -> Locale("bn", "IN")
+                        "ml" -> Locale("ml", "IN")
+                        "pa" -> Locale("pa", "IN")
+                        else -> Locale.US
+                    }
+                    
+                    ttsInstance?.let { t ->
+                        t.setSpeechRate(0.8f)
+                        t.setLanguage(locale)
+                        t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                            override fun onStart(utteranceId: String?) {}
+                            override fun onDone(utteranceId: String?) {
+                                t.shutdown()
+                                pendingResult.finish()
+                            }
+                            override fun onError(utteranceId: String?) {
+                                t.shutdown()
+                                pendingResult.finish()
+                            }
+                        })
+                        val params = android.os.Bundle()
+                        t.speak(text, TextToSpeech.QUEUE_FLUSH, params, "SMSReceiverTTS")
+                    }
+                } else {
+                    pendingResult.finish()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SMSReceiver", "Error playing background TTS", e)
         }
     }
 }

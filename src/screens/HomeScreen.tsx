@@ -148,115 +148,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     }, 300);
   };
 
-  const handleNewTransactionVoice = async (tx: {
-    type: 'CREDIT' | 'DEBIT';
-    amount: number;
-    merchant: string;
-    category: string;
-    isAutoPay: boolean;
-  }) => {
-    try {
-      const creditSetting = await db.getSetting('voice_credit', 'true');
-      const debitSetting = await db.getSetting('voice_debit', 'true');
-      const upcomingSetting = await db.getSetting('voice_upcoming', 'true');
-      const voiceLang = await db.getSetting('voice_language', 'en');
 
-      const voiceCredit = creditSetting === 'true';
-      const voiceDebit = debitSetting === 'true';
-      const voiceUpcoming = upcomingSetting === 'true';
-
-      let shouldSpeak = false;
-      let isUpcoming = tx.isAutoPay && tx.type === 'DEBIT';
-
-      if (tx.type === 'CREDIT' && voiceCredit) {
-        shouldSpeak = true;
-      } else if (tx.type === 'DEBIT') {
-        if (tx.isAutoPay && voiceUpcoming) {
-          shouldSpeak = true;
-          isUpcoming = true;
-        } else if (voiceDebit) {
-          shouldSpeak = true;
-        }
-      }
-
-      if (!shouldSpeak) return;
-
-      const amount = tx.amount;
-      const merchant = tx.merchant;
-      let text = '';
-
-      if (voiceLang === 'en') {
-        text = isUpcoming
-          ? `Reminder: Upcoming payment of rupees ${amount} for ${merchant}`
-          : tx.type === 'CREDIT'
-            ? `Received rupees ${amount} from ${merchant}`
-            : `Paid rupees ${amount} to ${merchant}`;
-      } else if (voiceLang === 'hi') {
-        text = isUpcoming
-          ? `याद दिलाएं: ${merchant} के लिए ${amount} रुपये का आगामी भुगतान`
-          : tx.type === 'CREDIT'
-            ? `${merchant} से ${amount} रुपये प्राप्त हुए`
-            : `${merchant} को ${amount} रुपये का भुगतान किया गया`;
-      } else if (voiceLang === 'kn') {
-        text = isUpcoming
-          ? `ನೆನಪೋಲೆ: ${merchant} ಗಾಗಿ ${amount} ರೂಪಾಯಿ ಮುಂಬರುವ ಪಾವತಿ`
-          : tx.type === 'CREDIT'
-            ? `${merchant} ನಿಂದ ${amount} ರೂಪಾಯಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ`
-            : `${merchant} ಗೆ ${amount} ರೂಪಾಯಿ ಪಾವತಿಸಲಾಗಿದೆ`;
-      } else if (voiceLang === 'ta') {
-        text = isUpcoming
-          ? `நினைவூட்டல்: ${merchant} க்கான ${amount} ரூபாய் வரவிருக்கும் கட்டணம்`
-          : tx.type === 'CREDIT'
-            ? `${merchant} இடமிருந்து ${amount} ரூபாய் பெறப்பட்டது`
-            : `${merchant} க்கு ${amount} ரூபாய் செலுத்தப்பட்டது`;
-      } else if (voiceLang === 'te') {
-        text = isUpcoming
-          ? `రిమైండర్: ${merchant} కోసం ${amount} రూపాయల రాబోయే చెల్లింపు`
-          : tx.type === 'CREDIT'
-            ? `${merchant} నుండి ${amount} రూపాయలు స్వీకరించబడింది`
-            : `${merchant} కి ${amount} రూపాయలు చెల్లించబడింది`;
-      } else if (voiceLang === 'mr') {
-        text = isUpcoming
-          ? `स्मरणपत्र: ${merchant} साठी ${amount} रुपयांचे आगामी पेमेंट`
-          : tx.type === 'CREDIT'
-            ? `${merchant} कडून ${amount} रुपये प्राप्त झाले`
-            : `${merchant} ला ${amount} रुपयांचे पेमेंट केले`;
-      } else if (voiceLang === 'gu') {
-        text = isUpcoming
-          ? `રિમાઇન્ડર: ${merchant} માટે ${amount} રૂપિયાની આગામી ચુકવણી`
-          : tx.type === 'CREDIT'
-            ? `${merchant} તરફથી ${amount} રૂપિયા મળ્યા`
-            : `${merchant} ને ${amount} રૂપિયા ચૂકવવામાં આવ્યા`;
-      } else if (voiceLang === 'bn') {
-        text = isUpcoming
-          ? `রিমাইন্ডার: ${merchant} এর জন্য ${amount} টাকার আসন্ন পেমেন্ট`
-          : tx.type === 'CREDIT'
-            ? `${merchant} থেকে ${amount} টাকা পাওয়া গেছে`
-            : `${merchant} কে ${amount} টাকা প্রদান করা হয়েছে`;
-      } else if (voiceLang === 'ml') {
-        text = isUpcoming
-          ? `ഓർമ്മപ്പെടുത്തൽ: ${merchant} ലേക്കുള്ള ${amount} രൂപയുടെ വരാനിരിക്കുന്ന പേയ്‌മെന്റ്`
-          : tx.type === 'CREDIT'
-            ? `${merchant} ൽ നിന്ന് ${amount} രൂപ ലഭിച്ചു`
-            : `${merchant} ലേക്ക് ${amount} രൂപ അടച്ചു`;
-      } else if (voiceLang === 'pa') {
-        text = isUpcoming
-          ? `ਯਾਦ ਦਿਵਾਓ: ${merchant} ਲਈ ${amount} ਰੁਪਏ ਦਾ ਆਉਣ ਵਾਲਾ ਭੁਗਤਾਨ`
-          : tx.type === 'CREDIT'
-            ? `${merchant} ਤੋਂ ${amount} ਰੁਪਏ ਪ੍ਰਾਪਤ ਹੋਏ`
-            : `${merchant} ਨੂੰ ${amount} ਰੁਪਏ ਦਾ ਭੁਗਤਾਨ ਕੀਤਾ ਗਿਆ`;
-      } else {
-        text = `Rupees ${amount} ${tx.type === 'CREDIT' ? 'received' : 'paid'}`;
-      }
-
-      const { NativeModules } = require('react-native');
-      if (NativeModules.FinanceCoreModule && NativeModules.FinanceCoreModule.speak) {
-        await NativeModules.FinanceCoreModule.speak(text, voiceLang);
-      }
-    } catch (e) {
-      console.warn('Failed to announce voice event', e);
-    }
-  };
 
   const fetchStats = useCallback(async () => {
     try {
@@ -289,9 +181,6 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
 
     const subscription = DeviceEventEmitter.addListener('onNewTransaction', (eventData?: any) => {
       fetchStats();
-      if (eventData) {
-        handleNewTransactionVoice(eventData);
-      }
     });
 
     return () => {
