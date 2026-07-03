@@ -17,6 +17,7 @@ const LOCAL_LOGOS: { [key: string]: any } = {
   'freecharge': require('../assets/logos/freecharge.png'),
   'airtelbank': require('../assets/logos/airtelbank.png'),
   'jiopaymentsbank': require('../assets/logos/jiopaymentsbank.png'),
+  'sbi': require('../assets/logos/sbi.png'),
   'hdfc': require('../assets/logos/hdfc.png'),
   'icici': require('../assets/logos/icici.png'),
   'axis': require('../assets/logos/axis.png'),
