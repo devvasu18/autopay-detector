@@ -71,7 +71,15 @@ export const db = {
   },
 
   getAutoPays: async (): Promise<AutoPay[]> => {
-    return db.execute('SELECT * FROM autopay ORDER BY last_payment DESC');
+    return db.execute(
+      `SELECT id, merchant, amount, frequency, bank, upi_id, status, 
+              MIN(first_detected) as first_detected, 
+              MAX(last_payment) as last_payment, 
+              next_expected_payment, sms_id, raw_body 
+       FROM autopay 
+       GROUP BY merchant 
+       ORDER BY last_payment DESC`
+    );
   },
 
   getStats: async () => {
@@ -94,8 +102,25 @@ export const db = {
       "SELECT * FROM transactions ORDER BY date DESC LIMIT 5"
     );
 
+    const ottRes = await db.execute(
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Subscription'"
+    );
+    const autopayRes = await db.execute(
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND sms_id IN (SELECT DISTINCT sms_id FROM autopay)"
+    );
+    const bankRes = await db.execute(
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND (payment_method = 'Bank Transfer' OR category = 'Loan / EMI')"
+    );
+    const rechargeRes = await db.execute(
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Recharge'"
+    );
+
     const totalIncome = incomeRes[0]?.total || 0;
     const totalExpense = expenseRes[0]?.total || 0;
+    const ottSpend = ottRes[0]?.total || 0;
+    const autopaySpend = autopayRes[0]?.total || 0;
+    const bankSpend = bankRes[0]?.total || 0;
+    const rechargeSpend = rechargeRes[0]?.total || 0;
 
     return {
       totalIncome,
@@ -105,6 +130,10 @@ export const db = {
       totalAutoPays: totalAutoPayRes[0]?.count || 0,
       largestExpense: largestExpenseRes[0] || null,
       recentTransactions: recentTxRes || [],
+      ottSpend,
+      autopaySpend,
+      bankSpend,
+      rechargeSpend,
     };
   },
 
@@ -456,5 +485,16 @@ export const db = {
     await db.execute('DELETE FROM transactions');
     await db.execute('DELETE FROM autopay');
     console.log('Database cleared.');
+  },
+
+  getSetting: async (key: string, defaultValue: string): Promise<string> => {
+    await db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)');
+    const res = await db.execute('SELECT value FROM settings WHERE key = ?', [key]);
+    return res[0]?.value ?? defaultValue;
+  },
+
+  setSetting: async (key: string, value: string): Promise<void> => {
+    await db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)');
+    await db.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value]);
   }
 };

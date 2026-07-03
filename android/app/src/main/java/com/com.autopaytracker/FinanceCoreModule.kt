@@ -12,19 +12,32 @@ import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import java.util.Locale
 import java.util.concurrent.Executors
+import android.speech.tts.TextToSpeech
 
 class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
     private val dbHelper = FinanceDatabaseHelper(reactContext)
     private val databaseExecutor = Executors.newSingleThreadExecutor()
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
 
     init {
         instance = this
+        reactApplicationContext.runOnUiQueueThread {
+            tts = TextToSpeech(reactContext) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    ttsReady = true
+                }
+            }
+        }
     }
 
     override fun invalidate() {
         super.invalidate()
         instance = null
+        reactApplicationContext.runOnUiQueueThread {
+            tts?.shutdown()
+        }
     }
 
     override fun getName(): String {
@@ -254,27 +267,54 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
                                     stmtTx.bindString(11, parsed.rawBody)
                                     stmtTx.executeInsert()
 
-                                    if (parsed.isAutoPay) {
-                                        val stmtAuto = db.compileStatement("""
-                                            INSERT OR REPLACE INTO autopay 
-                                            (merchant, amount, frequency, bank, upi_id, status, first_detected, last_payment, next_expected_payment, sms_id, raw_body)
-                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                        """)
-                                        stmtAuto.bindString(1, parsed.merchant)
-                                        stmtAuto.bindDouble(2, parsed.amount)
-                                        stmtAuto.bindString(3, parsed.frequency)
-                                        stmtAuto.bindString(4, parsed.bank)
-                                        stmtAuto.bindString(5, parsed.upiId)
-                                        stmtAuto.bindString(6, parsed.autoPayStatus)
-                                        val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant)
-                                        stmtAuto.bindLong(7, if (existingFirst > 0) existingFirst else parsed.date)
-                                        stmtAuto.bindLong(8, parsed.date)
-                                        val nextPayment = parsed.date + (30L * 24L * 60L * 60L * 1000L)
-                                        stmtAuto.bindLong(9, nextPayment)
-                                        stmtAuto.bindString(10, parsed.smsId)
-                                        stmtAuto.bindString(11, parsed.rawBody)
-                                        stmtAuto.executeInsert()
-                                    }
+                                     if (parsed.isAutoPay) {
+                                         val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant)
+                                         if (existingFirst > 0) {
+                                             val existingLast = FinanceParser.queryAutoPayLastPayment(db, parsed.merchant)
+                                             val newFirst = if (parsed.date < existingFirst) parsed.date else existingFirst
+                                             val newLast = if (parsed.date > existingLast) parsed.date else existingLast
+
+                                             val stmtUpdate = db.compileStatement("""
+                                                 UPDATE autopay SET 
+                                                     amount = ?, frequency = ?, bank = ?, upi_id = ?, status = ?, 
+                                                     first_detected = ?, last_payment = ?, next_expected_payment = ?, 
+                                                     sms_id = ?, raw_body = ?
+                                                 WHERE merchant = ?
+                                             """)
+                                             stmtUpdate.bindDouble(1, parsed.amount)
+                                             stmtUpdate.bindString(2, parsed.frequency)
+                                             stmtUpdate.bindString(3, parsed.bank)
+                                             stmtUpdate.bindString(4, parsed.upiId)
+                                             stmtUpdate.bindString(5, parsed.autoPayStatus)
+                                             stmtUpdate.bindLong(6, newFirst)
+                                             stmtUpdate.bindLong(7, newLast)
+                                             val nextPayment = newLast + (30L * 24L * 60L * 60L * 1000L)
+                                             stmtUpdate.bindLong(8, nextPayment)
+                                             stmtUpdate.bindString(9, parsed.smsId)
+                                             stmtUpdate.bindString(10, parsed.rawBody)
+                                             stmtUpdate.bindString(11, parsed.merchant)
+                                             stmtUpdate.executeUpdateDelete()
+                                         } else {
+                                             val stmtAuto = db.compileStatement("""
+                                                 INSERT INTO autopay 
+                                                 (merchant, amount, frequency, bank, upi_id, status, first_detected, last_payment, next_expected_payment, sms_id, raw_body)
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                             """)
+                                             stmtAuto.bindString(1, parsed.merchant)
+                                             stmtAuto.bindDouble(2, parsed.amount)
+                                             stmtAuto.bindString(3, parsed.frequency)
+                                             stmtAuto.bindString(4, parsed.bank)
+                                             stmtAuto.bindString(5, parsed.upiId)
+                                             stmtAuto.bindString(6, parsed.autoPayStatus)
+                                             stmtAuto.bindLong(7, parsed.date)
+                                             stmtAuto.bindLong(8, parsed.date)
+                                             val nextPayment = parsed.date + (30L * 24L * 60L * 60L * 1000L)
+                                             stmtAuto.bindLong(9, nextPayment)
+                                             stmtAuto.bindString(10, parsed.smsId)
+                                             stmtAuto.bindString(11, parsed.rawBody)
+                                             stmtAuto.executeInsert()
+                                         }
+                                     }
                                     parsedCount++
                                 }
                             }
@@ -295,6 +335,51 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
             } catch (e: Exception) {
                 promise.reject("SYNC_FAILED", e.message, e)
             }
+        }
+    }
+
+    @ReactMethod
+    fun speak(text: String, languageCode: String, promise: Promise) {
+        reactApplicationContext.runOnUiQueueThread {
+            if (tts == null || !ttsReady) {
+                tts = TextToSpeech(reactApplicationContext) { status ->
+                    if (status == TextToSpeech.SUCCESS) {
+                        ttsReady = true
+                        speakText(text, languageCode, promise)
+                    } else {
+                        promise.reject("TTS_INIT_FAILED", "TextToSpeech failed to initialize")
+                    }
+                }
+            } else {
+                speakText(text, languageCode, promise)
+            }
+        }
+    }
+
+    private fun speakText(text: String, languageCode: String, promise: Promise) {
+        val locale = when (languageCode.lowercase(Locale.US)) {
+            "hi" -> Locale("hi", "IN")
+            "kn" -> Locale("kn", "IN")
+            "ta" -> Locale("ta", "IN")
+            "te" -> Locale("te", "IN")
+            "mr" -> Locale("mr", "IN")
+            "gu" -> Locale("gu", "IN")
+            "bn" -> Locale("bn", "IN")
+            "ml" -> Locale("ml", "IN")
+            "pa" -> Locale("pa", "IN")
+            else -> Locale.US
+        }
+
+        tts?.let { t ->
+            val result = t.setLanguage(locale)
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                promise.reject("LANG_NOT_SUPPORTED", "Language $languageCode is not supported")
+                return
+            }
+            t.speak(text, TextToSpeech.QUEUE_FLUSH, null, "FinanceCoreModuleTTS")
+            promise.resolve(true)
+        } ?: run {
+            promise.reject("TTS_NULL", "TextToSpeech is null")
         }
     }
 

@@ -6,6 +6,9 @@ import java.util.regex.Pattern
 
 object FinanceParser {
 
+    private val emiPattern = Pattern.compile("\\bemi\\b")
+    private val sipPattern = Pattern.compile("\\bsip\\b")
+
     class ParsedSMS(
         val smsId: String,
         val merchant: String,
@@ -38,18 +41,24 @@ object FinanceParser {
             return false
         }
 
-        if (b.contains("apply now") || b.contains("click to") || b.contains("congratulations") || 
-            b.contains("won rs") || (b.contains("cashback up to") && b.contains("link") && !b.contains("credited"))
-        ) {
-            if (b.contains("offer") || b.contains("pre-approved") || b.contains("discount") || b.contains("win cash")) {
-                return false
-            }
+        val isPromotional = b.contains("offer") || b.contains("pre-approved") || b.contains("pre approved") || 
+                b.contains("avail now") || b.contains("apply now") || b.contains("click to") || 
+                b.contains("congratulations") || b.contains("congrats") || b.contains("won rs") || 
+                b.contains("win cash") || b.contains("eligible") || b.contains("instantly") ||
+                b.contains("discount")
+
+        val hasTxConfirm = b.contains("debited") || b.contains("credited") || b.contains("spent") || 
+                b.contains("paid") || b.contains("withdrawn") || b.contains("deposited") || 
+                b.contains("received") || b.contains("transferred")
+
+        if (isPromotional && !hasTxConfirm) {
+            return false
         }
 
         val hasAmount = b.contains("rs") || b.contains("rs.") || b.contains("inr") || b.contains("₹") || b.contains("usd")
         val hasFinKeywords = b.contains("debited") || b.contains("credited") || b.contains("spent") || b.contains("paid") ||
                 b.contains("payment") || b.contains("withdrawn") || b.contains("deposited") || b.contains("mandate") ||
-                b.contains("autopay") || b.contains("standing instruction") || b.contains("emi") || b.contains("sip") ||
+                b.contains("autopay") || b.contains("standing instruction") || emiPattern.matcher(b).find() || sipPattern.matcher(b).find() ||
                 b.contains("charge") || b.contains("renewed") || b.contains("debit") || b.contains("received") ||
                 b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring")
 
@@ -234,5 +243,15 @@ object FinanceParser {
         }
         cursor.close()
         return firstDetected
+    }
+
+    fun queryAutoPayLastPayment(db: SQLiteDatabase, merchant: String): Long {
+        var lastPayment: Long = 0
+        val cursor = db.rawQuery("SELECT last_payment FROM autopay WHERE merchant = ?", arrayOf(merchant))
+        if (cursor.moveToFirst()) {
+            lastPayment = cursor.getLong(0)
+        }
+        cursor.close()
+        return lastPayment
     }
 }
