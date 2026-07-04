@@ -12,6 +12,9 @@ object FinanceParser {
     private val rechargePattern = Pattern.compile("\\brecharge(d)?\\b")
     private val paidPattern = Pattern.compile("\\bpaid\\b")
     private val licPattern = Pattern.compile("\\blic\\b")
+    private val nachPattern = Pattern.compile("\\bnach\\b")
+    private val achPattern = Pattern.compile("\\bach\\b")
+    private val ecsPattern = Pattern.compile("\\becs\\b")
 
     class ParsedSMS(
         val smsId: String,
@@ -113,6 +116,11 @@ object FinanceParser {
             return false
         }
 
+        // 1a. Block ledger updates/entries from merchant tools (avoid double-counting)
+        if (b.contains("ledger") && (b.contains("debited your ledger") || b.contains("credited your ledger") || b.contains("your ledger") || b.contains("ledger with"))) {
+            return false
+        }
+
         // 2. Telecom Operator Recharge Confirmation Receipts (Double counting blocker)
         if (b.contains("credited to your") && (b.contains("airtel") || b.contains("jio") || b.contains("vi ") || b.contains("mobile") || b.contains("number"))) {
             return false
@@ -153,7 +161,8 @@ object FinanceParser {
             b.contains("amount due") || b.contains("minimum amount due") ||
             b.contains("payable by") || b.contains("payment due") ||
             b.contains("amount to be paid") || b.contains("due date:") ||
-            b.contains("invoice") || b.contains("is raised") || b.contains("raised")
+            b.contains("invoice") || b.contains("is raised") || b.contains("raised") ||
+            b.contains("fees due") || b.contains("fee due") || b.contains("dues") || b.contains("reminder") || b.contains("remind")
         val hasReminderCta = b.contains("ignore if paid") || b.contains("if already paid") ||
             b.contains("pay now") || b.contains("pay immediately") ||
             b.contains("click") && (b.contains("to pay") || b.contains("pay.billdesk") || b.contains("icici.co")) ||
@@ -381,7 +390,7 @@ object FinanceParser {
             category = "Bank Transfer"
         } else if (b.contains("payment") && (b.contains("received") || b.contains("towards") || b.contains("thank you")) && b.contains("credit card")) {
             category = "Bill"
-        } else if ((b.contains("ach") || b.contains("nach")) && bankKeywords.keys.any { b.contains(it.lowercase(Locale.US)) }) {
+        } else if ((achPattern.matcher(b).find() || nachPattern.matcher(b).find()) && bankKeywords.keys.any { b.contains(it.lowercase(Locale.US)) }) {
             category = "Loan / EMI"
         } else if (b.contains("refund") || b.contains("reversal")) {
             category = "Refund"
@@ -410,6 +419,7 @@ object FinanceParser {
             Pattern.compile("InfoACH\\*([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("InfoBIL\\*(?:INFT\\*)?([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:raised by|mandate raised by)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:on|from|is|was|has|via|ref|\\$)"),
+            Pattern.compile("(?:from vpa|vpa)\\s+([a-zA-Z0-9\\.\\-_]{3,30}?)(?:@|\\b)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s*:?\\s*([a-zA-Z0-9\\s\\.\\*\\&\\-\\/]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit|total|bal|cr|dr)\\b"),
             // P2P UPI: "PRAHALAD SINGH credited" — name appears before "credited"
             Pattern.compile("([a-zA-Z][a-zA-Z0-9\\s]{2,28}?)\\s+credited\\b", Pattern.CASE_INSENSITIVE)
@@ -493,7 +503,8 @@ object FinanceParser {
 
         val merchantLower = merchant.lowercase(Locale.US)
         val matchedCommon = commonMerchants.find { m -> 
-            merchantLower == m || (merchantLower.contains("unknown") && b.contains(m)) 
+            merchantLower == m || (merchantLower.contains("unknown") && 
+                Pattern.compile("\\b" + Pattern.quote(m) + "\\b", Pattern.CASE_INSENSITIVE).matcher(b).find())
         }
 
         if (matchedCommon != null) {
@@ -580,7 +591,7 @@ object FinanceParser {
             b.contains("standing instruction") || b.contains("standing instr") || b.contains("recurring") || 
             b.contains("auto debit") || b.contains("auto-debit") || b.contains("debit instruction") || 
             Pattern.compile("\\bsi\\b").matcher(b).find() || // \bsi\b = Standing Instruction (word boundary avoids 'visit', 'services' etc.)
-            b.contains("nach") || b.contains("ach") || b.contains("ecs") || 
+            nachPattern.matcher(b).find() || achPattern.matcher(b).find() || ecsPattern.matcher(b).find() || 
             b.contains("renewal successful") || b.contains("subscription renewed") || b.contains("renewed successfully")
 
         var finalCategory = category
@@ -602,10 +613,12 @@ object FinanceParser {
             paymentMethod = "Wallet"
         } else if (b.contains("card") || b.contains("credit card") || b.contains("debit card") || b.contains("visa") || b.contains("mastercard") || b.contains("rupay")) {
             paymentMethod = "Card"
-        } else if (b.contains("nach") || b.contains("ach") || b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
-            paymentMethod = if (b.contains("nach") || b.contains("ach")) "NACH" else "Bank Transfer"
+        } else if (nachPattern.matcher(b).find() || achPattern.matcher(b).find() || b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || ecsPattern.matcher(b).find()) {
+            paymentMethod = if (nachPattern.matcher(b).find() || achPattern.matcher(b).find()) "NACH" else "Bank Transfer"
         } else if (b.contains("bank account") || b.contains("registered account") || b.contains("auto debit") || b.contains("auto-debit") || b.contains("a/c")) {
-            paymentMethod = "Bank Transfer"
+            if (!b.contains("upi") && !b.contains("vpa") && !b.contains("@")) {
+                paymentMethod = "Bank Transfer"
+            }
         } else if (!b.contains("upi") && !b.contains("@") &&
             (category == "Insurance" || category == "Investment" || category == "Loan / EMI")) {
             // No UPI evidence — don't assume UPI for non-transactional confirmation messages
