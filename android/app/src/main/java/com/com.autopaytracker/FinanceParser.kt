@@ -31,8 +31,73 @@ object FinanceParser {
         val autoPayStatus: String
     )
 
+    private fun isPromotional(body: String): Boolean {
+        val b = body.lowercase(Locale.US)
+        val promotionalKeywords = listOf(
+            "offer", "eligible", "pre-approved", "preapproved", "apply now", "instant loan",
+            "cashback up to", "reward points", "click here", "click to", "apply here",
+            "limited time", "buy now", "shop now", "upgrade", "exclusive", "lucky draw",
+            "win cash", "congratulations", "congrats", "won rs", "pre-approved loan",
+            "loan offer", "sanctioned", "credit eligibility", "credit limit increased",
+            "bonus", "voucher", "coupon", "promo", "sale", "discount", "free", "win", 
+            "claim your", "credit report", "credit score", "credit line", "credit facility",
+            "credit offer", "credit approval", "credit limit"
+        )
+        
+        var hasPromoKeyword = false
+        for (kw in promotionalKeywords) {
+            if (b.contains(kw)) {
+                hasPromoKeyword = true
+                break
+            }
+        }
+        
+        if (b.contains("http") || b.contains("https") || b.contains("www")) {
+            hasPromoKeyword = true
+        }
+
+        if (hasPromoKeyword) {
+            val hasTxEvidence = b.contains("debited") || b.contains("credited") || b.contains("spent") || 
+                    b.contains("paid") || b.contains("transferred") || b.contains("withdrawn") || 
+                    b.contains("deposited") || b.contains("disbursed") || b.contains("auto debit") || 
+                    b.contains("auto pay") || b.contains("auto-debit") || b.contains("successful") || 
+                    b.contains("success")
+            return !hasTxEvidence
+        }
+        return false
+    }
+
+    private fun hasCreditProof(category: String, body: String): Boolean {
+        val b = body.lowercase(Locale.US)
+        return when (category) {
+            "Loan / EMI" -> b.contains("disbursed") || b.contains("disbursment")
+            "Insurance" -> b.contains("claim") && (b.contains("credited") || b.contains("received") || b.contains("paid"))
+            "Investment" -> b.contains("dividend") || b.contains("redemption") || b.contains("redeemed") || 
+                            b.contains("interest") || b.contains("maturity") || b.contains("proceeds")
+            "Subscription", "OTT", "Recharge", "Bill", "Shopping" -> b.contains("refund") || b.contains("credited back") || b.contains("reversal")
+            else -> false
+        }
+    }
+
+    private fun validateCredit(body: String): Boolean {
+        val b = body.lowercase(Locale.US)
+        val hasCreditWords = b.contains("credited") || b.contains("received") || b.contains("deposited") || 
+                b.contains("refund") || b.contains("dividend") || b.contains("disbursed") || b.contains("reversal")
+                
+        val hasAccountRef = b.contains("a/c") || b.contains("acct") || b.contains("account") || 
+                b.contains("card") || b.contains("ending") || b.contains("no:") || b.contains("xx") ||
+                b.contains("to your bank") || b.contains("in your bank")
+                
+        val hasSuccessIndicator = b.contains("success") || b.contains("successful") || b.contains("credited") || 
+                b.contains("received") || b.contains("done") || b.contains("processed") || b.contains("completed") || b.contains("disbursed")
+                
+        return hasCreditWords && hasAccountRef && hasSuccessIndicator
+    }
+
     fun isFinancialSMS(sender: String?, body: String?): Boolean {
         if (sender == null || body == null) return false
+        if (isPromotional(body)) return false
+        
         val s = sender.uppercase(Locale.US)
         val b = body.lowercase(Locale.US)
 
@@ -66,51 +131,19 @@ object FinanceParser {
             return false
         }
 
-        // 4. Promotional/Discount Ads
-        if (b.contains("enjoy") && b.contains("off")) {
-            return false
-        }
-        if (b.contains("shop safely") || b.contains("open now") || b.contains("get up to") || b.contains("save up to") || b.contains("discount of")) {
-            return false
-        }
-        if (b.contains("test drive") || b.contains("book your test") || b.contains("deals you") || b.contains("attractive benefits") || b.contains("on-road funding")) {
-            return false
-        }
-        if (b.contains("emi/lakh") || b.contains("emi/") || b.contains("emi starting") || b.contains("book your")) {
-            return false
-        }
-
-        val isPromotional = b.contains("offer") || b.contains("pre-approved") || b.contains("pre approved") || 
-                b.contains("avail now") || b.contains("apply now") || b.contains("click to") || 
-                b.contains("congratulations") || b.contains("congrats") || b.contains("won rs") || 
-                b.contains("win cash") || b.contains("eligible") || b.contains("instantly") ||
-                b.contains("discount") || b.contains("click") || b.contains("upgrade") || 
-                b.contains("unlimited data") || b.contains("unlimited call") || b.contains("validity") || 
-                b.contains("recharge now") || b.contains("recharge here") || b.contains("recharge karein") || 
-                b.contains("dial *") || b.contains("open a") || b.contains("pack") || b.contains("get now") || 
-                b.contains("get 100") || b.contains("corporate plans") || b.contains("data is consumed") ||
-                b.contains("data consumed")
-
-        val hasTxConfirm = b.contains("debited") || b.contains("credited") || b.contains("spent") || 
-                paidPattern.matcher(b).find() || b.contains("withdrawn") || b.contains("deposited") || 
-                b.contains("received") || b.contains("transferred") || b.contains("successful") || 
-                b.contains("success")
-
-        if (isPromotional && !hasTxConfirm) {
-            return false
-        }
-
         val hasAmount = b.contains("rs") || b.contains("rs.") || b.contains("inr") || b.contains("₹") || b.contains("usd")
         val hasFinKeywords = b.contains("debited") || b.contains("credited") || b.contains("spent") || paidPattern.matcher(b).find() ||
                 b.contains("payment") || b.contains("withdrawn") || b.contains("deposited") || b.contains("mandate") ||
                 b.contains("autopay") || b.contains("standing instruction") || emiPattern.matcher(b).find() || sipPattern.matcher(b).find() ||
                 chargePattern.matcher(b).find() || rechargePattern.matcher(b).find() || b.contains("renewed") || b.contains("debit") || b.contains("received") ||
-                b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring")
+                b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring") || b.contains("disbursed") || b.contains("refund")
 
         return hasAmount && hasFinKeywords
     }
 
     fun parseFinancialSMS(smsId: String, sender: String, body: String, date: Long): ParsedSMS? {
+        if (isPromotional(body)) return null
+        
         val b = body.lowercase(Locale.US)
         val s = sender.uppercase(Locale.US)
 
@@ -134,38 +167,116 @@ object FinanceParser {
         }
         if (amount == 0.0) return null
 
-        var type = "DEBIT"
-        if (b.contains("credited") || b.contains("received") || b.contains("deposited") || 
-            b.contains("refund") || b.contains("cashback") || b.contains("salary") || b.contains("interest")) {
-            type = "CREDIT"
-        }
-
         var bank = "Unknown Bank"
         val bankKeywords = mapOf(
+            // Private Sector Banks
             "HDFC" to "HDFC Bank",
-            "SBI" to "SBI",
             "ICICI" to "ICICI Bank",
             "AXIS" to "Axis Bank",
-            "PAYTM" to "Paytm Bank",
-            "PHONEPE" to "PhonePe",
-            "PNB" to "Punjab National Bank",
-            "BOI" to "Bank of India",
-            "KOTAK" to "Kotak Bank",
+            "KOTAK" to "Kotak Mahindra Bank",
             "INDUS" to "IndusInd Bank",
+            "YESBK" to "Yes Bank",
+            "YESB" to "Yes Bank",
+            "RBL" to "RBL Bank",
+            "FEDBK" to "Federal Bank",
+            "FBL" to "Federal Bank",
+            "IDFC" to "IDFC FIRST Bank",
+            "BANDHAN" to "Bandhan Bank",
+            "BDHN" to "Bandhan Bank",
+            "KVB" to "Karur Vysya Bank",
+            "KTK" to "Karnataka Bank",
+            "SIB" to "South Indian Bank",
+            "TMB" to "Tamilnad Mercantile Bank",
+            "JKB" to "J&K Bank",
+            "CUB" to "City Union Bank",
+            "DCB" to "DCB Bank",
+            "CSB" to "CSB Bank",
+            "DBS" to "DBS Bank",
+
+            // Public Sector Banks
+            "SBI" to "SBI",
+            "PNB" to "Punjab National Bank",
+            "BARODA" to "Bank of Baroda",
+            "BOB" to "Bank of Baroda",
             "CANARA" to "Canara Bank",
-            "UNION" to "Union Bank",
-            "HSBC" to "HSBC",
+            "CNRB" to "Canara Bank",
+            "UNION" to "Union Bank of India",
+            "UBIN" to "Union Bank of India",
+            "BOI" to "Bank of India",
+            "UCO" to "UCO Bank",
+            "CENTBK" to "Central Bank of India",
+            "CBI" to "Central Bank of India",
+            "MAHABK" to "Bank of Maharashtra",
+            "BOM" to "Bank of Maharashtra",
+            "PSB" to "Punjab & Sind Bank",
+            "IDBI" to "IDBI Bank",
+            "INDIANB" to "Indian Bank",
+            "INDN" to "Indian Bank",
+            "IDN" to "Indian Bank",
+            "IOB" to "Indian Overseas Bank",
+
+            // Small Finance Banks
+            "AUFBL" to "AU Small Finance Bank",
+            "AUBANK" to "AU Small Finance Bank",
+            "AU" to "AU Small Finance Bank",
+            "EQUITAS" to "Equitas Small Finance Bank",
+            "UJJIVAN" to "Ujjivan Small Finance Bank",
+            "ESAF" to "ESAF Small Finance Bank",
+            "SURYODAY" to "Suryoday Small Finance Bank",
+            "FINCARE" to "Fincare Small Finance Bank",
+            "JANA" to "Jana Small Finance Bank",
+            "UTKARSH" to "Utkarsh Small Finance Bank",
+            "CAPITAL" to "Capital Small Finance Bank",
+
+            // Payments Banks
+            "PAYTM" to "Paytm Payments Bank",
+            "PYTM" to "Paytm Payments Bank",
+            "AIRTEL" to "Airtel Payments Bank",
+            "APBL" to "Airtel Payments Bank",
+            "JIO" to "Jio Payments Bank",
+            "JPBL" to "Jio Payments Bank",
+            "NSDL" to "NSDL Payments Bank",
+            "IPPB" to "India Post Payments Bank",
+
+            // Foreign & Major Global Banks
+            "HSBC" to "HSBC Bank",
             "CITI" to "Citi Bank",
             "AMEX" to "American Express",
-            "RBL" to "RBL Bank",
-            "YESBK" to "Yes Bank",
-            "FBL" to "Federal Bank",
-            "JUPITER" to "Jupiter"
+            "SCB" to "Standard Chartered",
+            "STANCHAR" to "Standard Chartered",
+            "BARCLAYS" to "Barclays",
+            "MUFG" to "MUFG Bank",
+
+            // Neo-banks / Fintech Card platforms
+            "JUPITER" to "Jupiter",
+            "FIMONEY" to "Fi Money",
+            "ONECARD" to "OneCard",
+            "SLICE" to "slice",
+            "UNI" to "Uni Card"
         )
-        for ((key, value) in bankKeywords) {
-            if (s.contains(key) || b.contains(key.lowercase(Locale.US))) {
-                bank = value
+        // Sort keys by length in descending order to avoid prefix overlap issues (e.g. matching UNI instead of UNION)
+        val sortedBankKeys = bankKeywords.keys.sortedByDescending { it.length }
+
+        // First try to match bank in the sender
+        for (key in sortedBankKeys) {
+            if (s.contains(key)) {
+                bank = bankKeywords[key] ?: "Unknown Bank"
                 break
+            }
+        }
+        // If not found in sender, check body (excluding UPI IDs)
+        if (bank == "Unknown Bank") {
+            var bodyForBankCheck = b
+            val upiPatternForBank = Pattern.compile("[a-zA-Z0-9\\.\\-_]+@[a-zA-Z0-9\\-_]+")
+            val upiMatcherForBank = upiPatternForBank.matcher(b)
+            if (upiMatcherForBank.find()) {
+                bodyForBankCheck = upiMatcherForBank.replaceAll("")
+            }
+            for (key in sortedBankKeys) {
+                if (bodyForBankCheck.contains(key.lowercase(Locale.US))) {
+                    bank = bankKeywords[key] ?: "Unknown Bank"
+                    break
+                }
             }
         }
 
@@ -174,7 +285,9 @@ object FinanceParser {
             category = "Salary"
         } else if (b.contains("netflix") || b.contains("spotify") || b.contains("amazon prime") || 
             b.contains("youtube premium") || b.contains("disney") || b.contains("hotstar") || 
-            b.contains("apple") || b.contains("google play") || b.contains("subscription") || b.contains("prime membership")) {
+            b.contains("sony liv") || b.contains("sonyliv") || b.contains("zee5") || b.contains("jiocinema") || b.contains("jio cinema") || b.contains("tataplay")) {
+            category = "OTT"
+        } else if (b.contains("apple") || b.contains("google play") || b.contains("subscription") || b.contains("prime membership")) {
             category = "Subscription"
         } else if (b.contains("emi") || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
             category = "Loan / EMI"
@@ -205,6 +318,7 @@ object FinanceParser {
 
         var merchant = "Unknown Merchant"
         val merchantPatterns = listOf(
+            Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30})\\s*(?:from|is|was|has|on|ref|via|any|umn)"),
             Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30})\\s*(?:is|was|has|on|ref|via|any)"),
             Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20})\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
             Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
@@ -221,17 +335,67 @@ object FinanceParser {
             }
         }
 
-        if (merchant == "Unknown Merchant" || merchant.lowercase(Locale.US).contains("unknown")) {
-            val commonMerchants = listOf(
-                "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one",
-                "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
-                "lic", "airtel", "jio", "vi", "tataplay", "fastag"
-            )
-            for (m in commonMerchants) {
-                if (b.contains(m)) {
-                    merchant = m.substring(0, 1).uppercase(Locale.US) + m.substring(1)
-                    break
+        val commonMerchants = listOf(
+            "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one", "google cloud", "google",
+            "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
+            "lic", "airtel", "jio", "vi", "tataplay", "fastag"
+        )
+
+        val merchantLower = merchant.lowercase(Locale.US)
+        val matchedCommon = commonMerchants.find { m -> 
+            merchantLower == m || (merchantLower.contains("unknown") && b.contains(m)) 
+        }
+
+        if (matchedCommon != null) {
+            merchant = when (matchedCommon) {
+                "amazon prime" -> "Amazon Prime"
+                "google play" -> "Google Play"
+                "google one" -> "Google One"
+                "google cloud" -> "Google Cloud"
+                "tataplay" -> "Tata Play"
+                "fastag" -> "FASTag"
+                else -> matchedCommon.substring(0, 1).uppercase(Locale.US) + matchedCommon.substring(1)
+            }
+        } else if (merchant != "Unknown Merchant") {
+            merchant = merchant.split(" ").map { word ->
+                if (word.isNotEmpty()) {
+                    word.substring(0, 1).uppercase(Locale.US) + word.substring(1)
+                } else {
+                    ""
                 }
+            }.joinToString(" ")
+        }
+
+        val debitOnlyCategories = listOf(
+            "Insurance", "Investment", "Loan / EMI", "Bill", "Subscription", "Shopping", "Recharge", "OTT"
+        )
+        val isDebitOnlyCategory = debitOnlyCategories.contains(category)
+
+        var type = "DEBIT"
+        if (isDebitOnlyCategory) {
+            if (hasCreditProof(category, body) && (b.contains("credited") || b.contains("received") || b.contains("deposited"))) {
+                type = "CREDIT"
+            }
+        } else {
+            val isCreditCategory = category == "Salary" || category == "Cashback" || category == "Refund" || category == "Interest"
+            val hasCreditKeywords = b.contains("credited") || b.contains("received") || b.contains("deposited") || b.contains("refund")
+            
+            val hasMisleadingCreditWords = b.contains("credit card") || b.contains("credit limit") || 
+                    b.contains("credit score") || b.contains("credit report") || b.contains("credit line") || 
+                    b.contains("credit available") || b.contains("credit eligibility") || b.contains("credit facility") || 
+                    b.contains("credit offer") || b.contains("credit approval")
+                    
+            if ((isCreditCategory || hasCreditKeywords) && !hasMisleadingCreditWords) {
+                type = "CREDIT"
+            }
+        }
+
+        if (type == "CREDIT" && !validateCredit(body)) {
+            val hasDebitKeywords = b.contains("debited") || b.contains("spent") || b.contains("paid") || b.contains("transferred") || b.contains("withdrawn")
+            if (hasDebitKeywords) {
+                type = "DEBIT"
+            } else {
+                return null
             }
         }
 

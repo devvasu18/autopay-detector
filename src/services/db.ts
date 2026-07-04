@@ -182,7 +182,7 @@ export const db = {
     );
 
     const ottRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Subscription'" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category IN ('Subscription', 'OTT')" + dateCond,
       params
     );
     const autopayRes = await db.execute(
@@ -264,7 +264,7 @@ export const db = {
         payment_method: 'UPI',
         bank: 'HDFC Bank',
         type: 'DEBIT',
-        category: 'Subscription',
+        category: 'OTT',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'Your UPI AutoPay of Rs 649.00 to Netflix for subscription renewal was successful. Ref: 312345678901 - HDFC Bank',
@@ -320,7 +320,7 @@ export const db = {
         payment_method: 'Card',
         bank: 'ICICI Bank',
         type: 'DEBIT',
-        category: 'Subscription',
+        category: 'OTT',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'Subscription renewed! Rs 1,499.00 debited on ICICI Credit Card ending 1234 towards Amazon Prime Annual Membership.',
@@ -392,7 +392,7 @@ export const db = {
         payment_method: 'Card',
         bank: 'HDFC Bank',
         type: 'DEBIT',
-        category: 'Subscription',
+        category: 'OTT',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'Automatic Payment of Rs 119.00 to Spotify was successful on HDFC Debit Card ending 6655.',
@@ -437,7 +437,7 @@ export const db = {
         payment_method: 'UPI',
         bank: 'HDFC Bank',
         type: 'DEBIT',
-        category: 'Subscription',
+        category: 'OTT',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'UPI Mandate cancelled: AutoPay subscription of Rs 1499.00 to Disney Hotstar has been revoked by customer.',

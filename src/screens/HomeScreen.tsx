@@ -528,13 +528,13 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
         <View style={[styles.horizontalStatsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View>
             <Text style={[styles.horizontalCardLabel, { color: colors.textSecondary }]}>
-              Total Debit Spend
+              Total Payments
             </Text>
             <Text style={[styles.horizontalCardValue, { color: colors.text }]}>
               {formatCurrency(stats.totalExpense)}
             </Text>
           </View>
-          
+
           <TouchableOpacity
             style={[styles.dateRangeSelector, { backgroundColor: colors.isDark ? '#3A3A3C' : '#E5E5EA', borderColor: colors.border }]}
             onPress={() => setPeriodModalVisible(true)}
