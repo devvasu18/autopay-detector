@@ -75,7 +75,7 @@ object FinanceParser {
             "Insurance" -> b.contains("claim") && (b.contains("credited") || b.contains("received") || b.contains("paid"))
             "Investment" -> b.contains("dividend") || b.contains("redemption") || b.contains("redeemed") || 
                             b.contains("interest") || b.contains("maturity") || b.contains("proceeds")
-            "Subscription", "OTT", "Recharge", "Bill", "Shopping" -> b.contains("refund") || b.contains("credited back") || b.contains("reversal")
+            "Subscription", "OTT", "Recharge", "Bill", "Shopping" -> b.contains("refund") || b.contains("credited back") || b.contains("reversal") || b.contains("credited") || (b.contains("received") && b.contains("credit card"))
             else -> false
         }
     }
@@ -122,6 +122,9 @@ object FinanceParser {
         ) {
             return false
         }
+        if (b.contains("sim change") || b.contains("sim card") || b.contains("carrier charge") || b.contains("retailer will charge")) {
+            return false
+        }
 
         // 3. Telecom Carrier Data Consumption/Usage Warning Alerts (not transactions)
         if (b.contains("data is consumed") || b.contains("data consumed") || 
@@ -135,6 +138,11 @@ object FinanceParser {
         if (b.contains("bill") && (b.contains("generated") || b.contains("has been generated") || b.contains("is generated"))) {
             return false
         }
+        if (b.contains("invoice") && (b.contains("raised") || b.contains("generated") || b.contains("is raised") || b.contains("has been raised")) &&
+            !b.contains("paid") && !b.contains("successful") && !b.contains("debited") && !b.contains("credited")
+        ) {
+            return false
+        }
         // 5. Credit card / loan bill due reminders — two-factor check to avoid false positives
         //    Factor A: a "something is due" signal
         //    Factor B: a call-to-action OR "ignore if paid" signal (unique to reminders, not confirmations)
@@ -144,18 +152,21 @@ object FinanceParser {
             b.contains("stmt alert") || b.contains("statement alert") ||
             b.contains("amount due") || b.contains("minimum amount due") ||
             b.contains("payable by") || b.contains("payment due") ||
-            b.contains("amount to be paid") || b.contains("due date:")
+            b.contains("amount to be paid") || b.contains("due date:") ||
+            b.contains("invoice") || b.contains("is raised") || b.contains("raised")
         val hasReminderCta = b.contains("ignore if paid") || b.contains("if already paid") ||
             b.contains("pay now") || b.contains("pay immediately") ||
             b.contains("click") && (b.contains("to pay") || b.contains("pay.billdesk") || b.contains("icici.co")) ||
-            b.contains("maintain sufficient") || b.contains("ensure sufficient")
+            b.contains("maintain sufficient") || b.contains("ensure sufficient") ||
+            b.contains("delayed") || b.contains("minimum due") || b.startsWith("pay ")
         val hasActualTxEvidence = b.contains("debited") || b.contains("credited") ||
             b.contains("spent") || b.contains("transferred") || b.contains("withdrawn")
         if (hasDueSignal && hasReminderCta && !hasActualTxEvidence) {
             return false
         }
 
-        val hasAmount = b.contains("rs") || b.contains("rs.") || b.contains("inr") || b.contains("₹") || b.contains("usd")
+        val currencyPattern = Pattern.compile("(?:rs\\.?|inr|₹|usd)\\s*\\d", Pattern.CASE_INSENSITIVE)
+        val hasAmount = currencyPattern.matcher(b).find()
         val hasFinKeywords = b.contains("debited") || b.contains("credited") || b.contains("spent") || paidPattern.matcher(b).find() ||
                 b.contains("payment") || b.contains("withdrawn") || b.contains("deposited") || b.contains("mandate") ||
                 b.contains("autopay") || b.contains("standing instruction") || emiPattern.matcher(b).find() || sipPattern.matcher(b).find() ||
@@ -330,7 +341,7 @@ object FinanceParser {
             category = "OTT"
         } else if (b.contains("apple") || b.contains("google play") || b.contains("subscription") || b.contains("prime membership")) {
             category = "Subscription"
-        } else if (emiPattern.matcher(b).find() || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
+        } else if ((emiPattern.matcher(b).find() && !b.contains("convert to emi") && !b.contains("convert this txn to emi") && !b.contains("convert this transaction to emi")) || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
             category = "Loan / EMI"
         } else if (sipPattern.matcher(b).find() || b.contains("mutual fund") || b.contains("groww") || 
             b.contains("zerodha") || b.contains("upstox") || b.contains("investment")) {
@@ -356,7 +367,7 @@ object FinanceParser {
             category = "Food"
         } else if (b.contains("uber") || b.contains("ola") || b.contains("irctc") || b.contains("travel") || b.contains("fuel") || b.contains("petrol")) {
             category = "Travel / Fuel"
-        } else if (b.contains("amazon") || b.contains("flipkart") || b.contains("myntra") || b.contains("shopping")) {
+        } else if (b.contains("amazon") || b.contains("flipkart") || b.contains("myntra") || b.contains("shopping") || b.contains("milkbasket")) {
             category = "Shopping"
         } else if (b.contains("cheque") || b.contains("chq") || b.contains("check no") || b.contains("cleared")) {
             category = "Bank Transfer"
@@ -364,6 +375,16 @@ object FinanceParser {
             b.contains("transferred rs") || b.contains("transferred inr")) &&
             (b.contains("upi") || (b.contains("from") && b.contains("to")))) {
             category = "Bank Transfer"
+        } else if (b.contains("debited") && b.contains("credited")) {
+            category = "Bank Transfer"
+        } else if ((b.contains("credited") || b.contains("received")) && b.contains("from")) {
+            category = "Bank Transfer"
+        } else if (b.contains("payment") && (b.contains("received") || b.contains("towards") || b.contains("thank you")) && b.contains("credit card")) {
+            category = "Bill"
+        } else if ((b.contains("ach") || b.contains("nach")) && bankKeywords.keys.any { b.contains(it.lowercase(Locale.US)) }) {
+            category = "Loan / EMI"
+        } else if (b.contains("refund") || b.contains("reversal")) {
+            category = "Refund"
         }
 
         var merchant = "Unknown Merchant"
@@ -371,19 +392,27 @@ object FinanceParser {
             // Multiline "To [Merchant]" pattern — highest priority (e.g. HDFC UPI sent messages)
             Pattern.compile("(?:^|\\n)to\\s+([a-zA-Z][a-zA-Z0-9\\s\\.\\*\\&\\-]{2,29}?)\\s*(?=\\n|\$)", Pattern.MULTILINE),
             // Credit card international spend: "USD X spent using Bank Card on DATE on MERCHANT."
-            Pattern.compile("spent.{5,60}?\\bon\\s+([a-zA-Z][a-zA-Z0-9\\s\\.\\*\\&\\-]{2,29}?)\\s*(?:\\.|avl|if not|\$)", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:for|from|is|was|has|on|ref|via|any|umn)"),
-            Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:is|was|has|on|ref|via|any)"),
+            Pattern.compile("spent.{5,60}?\\bon\\s+([a-zA-Z][a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{2,29}?)\\s*(?:\\.|avl|if not|\$)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:for|from|is|was|has|on|ref|via|any|umn)"),
+            Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:is|was|has|on|ref|via|any)"),
+            // Jar mandate: "For Jar mandate"
+            Pattern.compile("for\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)\\s+mandate", Pattern.CASE_INSENSITIVE),
             // Standing instruction / autopay: "payment of INR X for MAX LIFE,"
             Pattern.compile("(?:payment of|paid for|processed for|for)\\s+(?:(?:rs\\.?|inr|₹)[\\d,.]+\\s+for\\s+)?([a-zA-Z][a-zA-Z0-9\\s\\.]{2,29}?)\\s*[,\\.]", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20}?)\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
+            Pattern.compile("([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)\\s+(?:top-up|topup)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("at\\s+([a-zA-Z0-9\\s\\.\\*\\&\\,]{3,30}?)(?:\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa|\\bavl\\b|\\$))"),
+            Pattern.compile("(?:sent to|paid to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\,]{3,30}?)(?:\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa|\\bavl\\b|\\$))"),
+            Pattern.compile("spent\\s+on\\s+([a-zA-Z0-9\\s\\.\\*\\&\\,]{3,30}?)(?:\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa|\\bavl\\b|\\$))"),
             Pattern.compile("(?:for your|your)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s+(?:order|membership|subscription|purchase|booking)"),
             Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("debited\\s+at\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
-            Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\/]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit)\\b"),
+            Pattern.compile("InfoACH\\*([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("InfoBIL\\*(?:INFT\\*)?([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:raised by|mandate raised by)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:on|from|is|was|has|via|ref|\\$)"),
+            Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s*:?\\s*([a-zA-Z0-9\\s\\.\\*\\&\\-\\/]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit|total|bal|cr|dr)\\b"),
             // P2P UPI: "PRAHALAD SINGH credited" — name appears before "credited"
-            Pattern.compile("([a-zA-Z][a-zA-Z\\s]{2,28}?)\\s+credited\\b", Pattern.CASE_INSENSITIVE)
+            Pattern.compile("([a-zA-Z][a-zA-Z0-9\\s]{2,28}?)\\s+credited\\b", Pattern.CASE_INSENSITIVE)
         )
 
         for (pattern in merchantPatterns) {
@@ -391,10 +420,16 @@ object FinanceParser {
             if (matcher.find()) {
                 val tempMerchant = matcher.group(1)?.trim() ?: "Unknown Merchant"
                 var cleanedMerchant = tempMerchant.split(" txn ")[0].split(" ref ")[0].split(" date ")[0].trim()
-                if (cleanedMerchant.endsWith(".")) {
+                while (cleanedMerchant.isNotEmpty() && (cleanedMerchant.endsWith(".") || cleanedMerchant.endsWith(",") || cleanedMerchant.endsWith("*") || cleanedMerchant.endsWith("-"))) {
                     cleanedMerchant = cleanedMerchant.substring(0, cleanedMerchant.length - 1).trim()
                 }
                 val lowerM = cleanedMerchant.lowercase(Locale.US)
+                if (cleanedMerchant.all { it.isDigit() }) {
+                    continue
+                }
+                if (lowerM.startsWith("rs ") || lowerM.startsWith("rs.") || lowerM.startsWith("inr ") || lowerM.startsWith("₹") || lowerM.startsWith("usd ")) {
+                    continue
+                }
                 if (lowerM.contains("a/c") || lowerM.contains("acct") || lowerM.contains("account") || 
                     lowerM.contains("card") || lowerM.contains("ending") || lowerM.contains("bank") || 
                     lowerM.contains("no:") || lowerM.length < 3) {
@@ -452,7 +487,8 @@ object FinanceParser {
         val commonMerchants = listOf(
             "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one", "google cloud", "google",
             "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
-            "lic", "airtel", "jio", "vi", "tataplay", "fastag"
+            "lic", "airtel", "jio", "vi", "tataplay", "fastag", "scapia", "jar", "milkbasket",
+            "act fibernet", "smytten", "jvvnl", "national pension", "lenskart"
         )
 
         val merchantLower = merchant.lowercase(Locale.US)
@@ -468,6 +504,11 @@ object FinanceParser {
                 "google cloud" -> "Google Cloud"
                 "tataplay" -> "Tata Play"
                 "fastag" -> "FASTag"
+                "act fibernet" -> "ACT Fibernet"
+                "jvvnl" -> "JVVNL"
+                "smytten" -> "Smytten"
+                "national pension" -> "National Pension System"
+                "lenskart" -> "Lenskart"
                 else -> matchedCommon.substring(0, 1).uppercase(Locale.US) + matchedCommon.substring(1)
             }
         } else if (merchant != "Unknown Merchant") {
@@ -485,6 +526,11 @@ object FinanceParser {
             merchant = bank
         }
 
+        // Credit Card payments with no extractable merchant — fall back to "[Bank] Credit Card"
+        if (merchant == "Unknown Merchant" && category == "Bill" && b.contains("credit card")) {
+            merchant = if (bank != "Unknown Bank") "$bank Credit Card" else "Credit Card"
+        }
+
         val debitOnlyCategories = listOf(
             "Insurance", "Investment", "Loan / EMI", "Bill", "Subscription", "Shopping", "Recharge", "OTT"
         )
@@ -499,10 +545,11 @@ object FinanceParser {
             val isCreditCategory = category == "Salary" || category == "Cashback" || category == "Refund" || category == "Interest"
             val hasCreditKeywords = b.contains("credited") || b.contains("received") || b.contains("deposited") || b.contains("refund")
             
-            val hasMisleadingCreditWords = b.contains("credit card") || b.contains("credit limit") || 
+            val hasMisleadingCreditWords = (b.contains("credit card") || b.contains("credit limit") || 
                     b.contains("credit score") || b.contains("credit report") || b.contains("credit line") || 
                     b.contains("credit available") || b.contains("credit eligibility") || b.contains("credit facility") || 
-                    b.contains("credit offer") || b.contains("credit approval")
+                    b.contains("credit offer") || b.contains("credit approval")) &&
+                    !b.contains("refund") && !b.contains("reversal") && !b.contains("credited to")
                     
             if ((isCreditCategory || hasCreditKeywords) && !hasMisleadingCreditWords) {
                 type = "CREDIT"
@@ -555,8 +602,10 @@ object FinanceParser {
             paymentMethod = "Wallet"
         } else if (b.contains("card") || b.contains("credit card") || b.contains("debit card") || b.contains("visa") || b.contains("mastercard") || b.contains("rupay")) {
             paymentMethod = "Card"
-        } else if (b.contains("nach") || b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
-            paymentMethod = if (b.contains("nach")) "NACH" else "Bank Transfer"
+        } else if (b.contains("nach") || b.contains("ach") || b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
+            paymentMethod = if (b.contains("nach") || b.contains("ach")) "NACH" else "Bank Transfer"
+        } else if (b.contains("bank account") || b.contains("registered account") || b.contains("auto debit") || b.contains("auto-debit") || b.contains("a/c")) {
+            paymentMethod = "Bank Transfer"
         } else if (!b.contains("upi") && !b.contains("@") &&
             (category == "Insurance" || category == "Investment" || category == "Loan / EMI")) {
             // No UPI evidence — don't assume UPI for non-transactional confirmation messages
