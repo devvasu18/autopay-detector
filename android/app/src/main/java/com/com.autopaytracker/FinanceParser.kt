@@ -87,7 +87,8 @@ object FinanceParser {
                 
         val hasAccountRef = b.contains("a/c") || b.contains("acct") || b.contains("account") || 
                 b.contains("card") || b.contains("ending") || b.contains("no:") || b.contains("xx") ||
-                b.contains("to your bank") || b.contains("in your bank")
+                b.contains("to your bank") || b.contains("in your bank") ||
+                Regex("[a-z]{2,}\\*{4,}\\d{3,}").containsMatchIn(b) // masked PF/EPF account e.g. BGBNG******0646
                 
         val hasSuccessIndicator = b.contains("success") || b.contains("successful") || b.contains("credited") || 
                 b.contains("received") || b.contains("done") || b.contains("processed") || b.contains("completed") || b.contains("disbursed")
@@ -134,9 +135,23 @@ object FinanceParser {
         if (b.contains("bill") && (b.contains("generated") || b.contains("has been generated") || b.contains("is generated"))) {
             return false
         }
-        if ((b.contains("amount to be paid") || b.contains("amount due") || b.contains("payment due") || b.contains("due date:")) &&
-            !b.contains("debited") && !b.contains("paid") && !b.contains("spent")
-        ) {
+        // 5. Credit card / loan bill due reminders — two-factor check to avoid false positives
+        //    Factor A: a "something is due" signal
+        //    Factor B: a call-to-action OR "ignore if paid" signal (unique to reminders, not confirmations)
+        //    Both must be present, with no real debit/credit evidence
+        val hasDueSignal = b.contains("is due on") || b.contains("due on") || b.contains("overdue") ||
+            b.contains("total due") || b.contains("min due") ||
+            b.contains("stmt alert") || b.contains("statement alert") ||
+            b.contains("amount due") || b.contains("minimum amount due") ||
+            b.contains("payable by") || b.contains("payment due") ||
+            b.contains("amount to be paid") || b.contains("due date:")
+        val hasReminderCta = b.contains("ignore if paid") || b.contains("if already paid") ||
+            b.contains("pay now") || b.contains("pay immediately") ||
+            b.contains("click") && (b.contains("to pay") || b.contains("pay.billdesk") || b.contains("icici.co")) ||
+            b.contains("maintain sufficient") || b.contains("ensure sufficient")
+        val hasActualTxEvidence = b.contains("debited") || b.contains("credited") ||
+            b.contains("spent") || b.contains("transferred") || b.contains("withdrawn")
+        if (hasDueSignal && hasReminderCta && !hasActualTxEvidence) {
             return false
         }
 
@@ -145,7 +160,10 @@ object FinanceParser {
                 b.contains("payment") || b.contains("withdrawn") || b.contains("deposited") || b.contains("mandate") ||
                 b.contains("autopay") || b.contains("standing instruction") || emiPattern.matcher(b).find() || sipPattern.matcher(b).find() ||
                 chargePattern.matcher(b).find() || rechargePattern.matcher(b).find() || b.contains("renewed") || b.contains("debit") || b.contains("received") ||
-                b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring") || b.contains("disbursed") || b.contains("refund")
+                b.contains("auto pay") || b.contains("auto-debit") || b.contains("recurring") || b.contains("disbursed") || b.contains("refund") ||
+                // Sent/transferred UPI messages: "Sent Rs.X" style
+                b.contains("sent rs") || b.contains("sent inr") || b.contains("sent ₹") ||
+                b.contains("transferred rs") || b.contains("transferred inr")
 
         return hasAmount && hasFinKeywords
     }
@@ -158,6 +176,10 @@ object FinanceParser {
 
         var amount = 0.0
         val amountPatterns = listOf(
+            // Foreign currency transactions: "USD 39.00 spent..." — must run first to avoid INR avl limit being picked up
+            Pattern.compile("(?:usd|eur|gbp|sgd|aed|aud|cad|jpy)\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
+            // EPF: grab "Contribution of Rs. X" before the generic Rs. pattern picks up the balance
+            Pattern.compile("contribution\\s+of\\s+(?:rs\\.?|inr|₹)\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
             Pattern.compile("(?:rs\\.?|inr|₹)\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
             Pattern.compile("spent\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
             Pattern.compile("debited\\s+with\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
@@ -178,6 +200,12 @@ object FinanceParser {
 
         var bank = "Unknown Bank"
         val bankKeywords = mapOf(
+            // Wallets / Payment Gateways
+            "APAY" to "Amazon Pay",
+            "AMAZONPAY" to "Amazon Pay",
+            "JUSPAY" to "Juspay",
+            "PAYTM" to "Paytm",
+            
             // Private Sector Banks
             "HDFC" to "HDFC Bank",
             "ICICI" to "ICICI Bank",
@@ -292,6 +320,10 @@ object FinanceParser {
         var category = "Others"
         if (b.contains("salary")) {
             category = "Salary"
+        } else if (b.contains("contribution") && (b.contains("epf") || b.contains("provident fund") ||
+            b.contains("passbook") || b.contains("due month") || b.contains("uan") || b.contains("epfo"))) {
+            // EPF / EPFO contribution confirmation
+            category = "Investment"
         } else if (b.contains("netflix") || b.contains("spotify") || b.contains("amazon prime") || 
             b.contains("youtube premium") || b.contains("disney") || b.contains("hotstar") || 
             b.contains("sony liv") || b.contains("sonyliv") || b.contains("zee5") || b.contains("jiocinema") || b.contains("jio cinema") || b.contains("tataplay")) {
@@ -306,7 +338,10 @@ object FinanceParser {
         } else if (b.contains("electricity") || b.contains("power") || b.contains("bescom") || 
             b.contains("water bill") || b.contains("gas bill") || b.contains("utility bill")) {
             category = "Bill"
-        } else if (b.contains("insurance") || b.contains("premium") || licPattern.matcher(b).find()) {
+        } else if (b.contains("insurance") || b.contains("premium") || licPattern.matcher(b).find() ||
+            b.contains("max life") || b.contains("maxlife") || b.contains("hdfc life") ||
+            b.contains("sbi life") || b.contains("bajaj allianz") || b.contains("star health") ||
+            b.contains("new india") || b.contains("national insurance") || b.contains("oriental insurance")) {
             category = "Insurance"
         } else if (b.contains("recharge") || b.contains("mobile recharge") || b.contains("jio") || 
             b.contains("airtel") || b.contains("vi prepaid")) {
@@ -323,18 +358,32 @@ object FinanceParser {
             category = "Travel / Fuel"
         } else if (b.contains("amazon") || b.contains("flipkart") || b.contains("myntra") || b.contains("shopping")) {
             category = "Shopping"
+        } else if (b.contains("cheque") || b.contains("chq") || b.contains("check no") || b.contains("cleared")) {
+            category = "Bank Transfer"
+        } else if ((b.contains("sent rs") || b.contains("sent inr") || b.contains("sent ₹") ||
+            b.contains("transferred rs") || b.contains("transferred inr")) &&
+            (b.contains("upi") || (b.contains("from") && b.contains("to")))) {
+            category = "Bank Transfer"
         }
 
         var merchant = "Unknown Merchant"
         val merchantPatterns = listOf(
+            // Multiline "To [Merchant]" pattern — highest priority (e.g. HDFC UPI sent messages)
+            Pattern.compile("(?:^|\\n)to\\s+([a-zA-Z][a-zA-Z0-9\\s\\.\\*\\&\\-]{2,29}?)\\s*(?=\\n|\$)", Pattern.MULTILINE),
+            // Credit card international spend: "USD X spent using Bank Card on DATE on MERCHANT."
+            Pattern.compile("spent.{5,60}?\\bon\\s+([a-zA-Z][a-zA-Z0-9\\s\\.\\*\\&\\-]{2,29}?)\\s*(?:\\.|avl|if not|\$)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:for|from|is|was|has|on|ref|via|any|umn)"),
             Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:is|was|has|on|ref|via|any)"),
+            // Standing instruction / autopay: "payment of INR X for MAX LIFE,"
+            Pattern.compile("(?:payment of|paid for|processed for|for)\\s+(?:(?:rs\\.?|inr|₹)[\\d,.]+\\s+for\\s+)?([a-zA-Z][a-zA-Z0-9\\s\\.]{2,29}?)\\s*[,\\.]", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20}?)\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
             Pattern.compile("(?:for your|your)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s+(?:order|membership|subscription|purchase|booking)"),
             Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("debited\\s+at\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
-            Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit)\\b")
+            Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\/]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit)\\b"),
+            // P2P UPI: "PRAHALAD SINGH credited" — name appears before "credited"
+            Pattern.compile("([a-zA-Z][a-zA-Z\\s]{2,28}?)\\s+credited\\b", Pattern.CASE_INSENSITIVE)
         )
 
         for (pattern in merchantPatterns) {
@@ -363,6 +412,40 @@ object FinanceParser {
                 merchant = "ATM " + (atmMatcher.group(1)?.uppercase(Locale.US) ?: "")
             } else {
                 merchant = "ATM Withdrawal"
+            }
+        }
+
+        // Fix 5: Detect EPFO / PF contribution sender — set merchant explicitly
+        if (merchant == "Unknown Merchant") {
+            if (s.contains("EPFO") || s.contains("EPFOHO") || s.contains("PFMSGR") ||
+                (b.contains("contribution") && b.contains("due month")) ||
+                (b.contains("passbook") && b.contains("contribution"))) {
+                merchant = "EPFO"
+            }
+        }
+
+        // Fix Cheque: extract cheque number as merchant identifier
+        if (merchant == "Unknown Merchant" && (b.contains("cheque") || b.contains("chq"))) {
+            val chequeNoPattern = Pattern.compile("(?:cheque|chq)\\s+no\\.?\\s*(\\d+)", Pattern.CASE_INSENSITIVE)
+            val chequeNoMatcher = chequeNoPattern.matcher(b)
+            merchant = if (chequeNoMatcher.find()) {
+                "Cheque No. ${chequeNoMatcher.group(1)}"
+            } else {
+                "$bank Cheque"
+            }
+        }
+
+        // Fix: Extract trailing "Team [CompanyName]" as merchant (e.g. insurance/fintech confirmation SMSes)
+        if (merchant == "Unknown Merchant") {
+            val teamPattern = Pattern.compile("team\\s+([a-zA-Z][a-zA-Z0-9\\s]{2,30}?)\\s*$", Pattern.MULTILINE or Pattern.CASE_INSENSITIVE)
+            val teamMatcher = teamPattern.matcher(b)
+            if (teamMatcher.find()) {
+                val teamName = teamMatcher.group(1)?.trim() ?: ""
+                if (teamName.length >= 3) {
+                    merchant = teamName.split(" ").joinToString(" ") { w ->
+                        if (w.isNotEmpty()) w[0].uppercaseChar() + w.substring(1) else ""
+                    }
+                }
             }
         }
 
@@ -397,6 +480,11 @@ object FinanceParser {
             }.joinToString(" ")
         }
 
+        // Loan/EMI with no extractable merchant — fall back to the lending bank
+        if (merchant == "Unknown Merchant" && category == "Loan / EMI" && bank != "Unknown Bank") {
+            merchant = bank
+        }
+
         val debitOnlyCategories = listOf(
             "Insurance", "Investment", "Loan / EMI", "Bill", "Subscription", "Shopping", "Recharge", "OTT"
         )
@@ -421,6 +509,17 @@ object FinanceParser {
             }
         }
 
+        // Fix 4: EPF contributions are salary deductions — always DEBIT even though message says "received"
+        if (b.contains("contribution") && b.contains("due month") && type == "CREDIT") {
+            type = "DEBIT"
+        }
+
+        // Fix: P2P UPI transfer — "Acct debited; [PERSON] credited" means money went OUT (DEBIT)
+        // The "credited" refers to the recipient, not the sender's account
+        if (b.contains("debited") && b.contains("credited") && type == "CREDIT") {
+            type = "DEBIT"
+        }
+
         if (type == "CREDIT" && !validateCredit(body)) {
             val hasDebitKeywords = b.contains("debited") || b.contains("spent") || b.contains("paid") || b.contains("transferred") || b.contains("withdrawn")
             if (hasDebitKeywords) {
@@ -433,7 +532,8 @@ object FinanceParser {
         val isAutoPay = b.contains("autopay") || b.contains("auto pay") || b.contains("mandate") || 
             b.contains("standing instruction") || b.contains("standing instr") || b.contains("recurring") || 
             b.contains("auto debit") || b.contains("auto-debit") || b.contains("debit instruction") || 
-            b.contains("si") || b.contains("nach") || b.contains("ach") || b.contains("ecs") || 
+            Pattern.compile("\\bsi\\b").matcher(b).find() || // \bsi\b = Standing Instruction (word boundary avoids 'visit', 'services' etc.)
+            b.contains("nach") || b.contains("ach") || b.contains("ecs") || 
             b.contains("renewal successful") || b.contains("subscription renewed") || b.contains("renewed successfully")
 
         var finalCategory = category
@@ -449,10 +549,18 @@ object FinanceParser {
         }
 
         var paymentMethod = "UPI"
-        if (b.contains("card") || b.contains("credit card") || b.contains("debit card") || b.contains("visa") || b.contains("mastercard") || b.contains("rupay")) {
+        if (b.contains("cheque") || b.contains("chq") || b.contains("check no")) {
+            paymentMethod = "Cheque"
+        } else if (b.contains("wallet") || b.contains("apay balance") || b.contains("amazon pay balance") || b.contains("paytm balance")) {
+            paymentMethod = "Wallet"
+        } else if (b.contains("card") || b.contains("credit card") || b.contains("debit card") || b.contains("visa") || b.contains("mastercard") || b.contains("rupay")) {
             paymentMethod = "Card"
-        } else if (b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
-            paymentMethod = "Bank Transfer"
+        } else if (b.contains("nach") || b.contains("netbanking") || b.contains("neft") || b.contains("imps") || b.contains("rtgs") || b.contains("ecs")) {
+            paymentMethod = if (b.contains("nach")) "NACH" else "Bank Transfer"
+        } else if (!b.contains("upi") && !b.contains("@") &&
+            (category == "Insurance" || category == "Investment" || category == "Loan / EMI")) {
+            // No UPI evidence — don't assume UPI for non-transactional confirmation messages
+            paymentMethod = "Unknown"
         }
 
         var upiId = ""
@@ -482,7 +590,13 @@ object FinanceParser {
             type = type,
             category = finalCategory,
             confidence = if (finalCategory == "Others" && merchant == "Unknown Merchant") 0.6 else 0.95,
-            status = if (b.contains("failed") || b.contains("declined")) "Failed" else "Success",
+            status = when {
+                b.contains("failed") || b.contains("declined") || b.contains("rejected") -> "Failed"
+                b.contains("scheduled for debit") || b.contains("will be debited") ||
+                b.contains("maintain sufficient") || b.contains("ensure sufficient") ||
+                b.contains("scheduled for") && b.contains("nach") -> "Scheduled"
+                else -> "Success"
+            },
             rawBody = body,
             isAutoPay = isAutoPay,
             frequency = "Monthly",
