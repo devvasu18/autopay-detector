@@ -419,6 +419,7 @@ object FinanceParser {
             Pattern.compile("InfoACH\\*([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("InfoBIL\\*(?:INFT\\*)?([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:raised by|mandate raised by)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:on|from|is|was|has|via|ref|\\$)"),
+            Pattern.compile("([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s+(?:refund|reversal)\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:from vpa|vpa)\\s+([a-zA-Z0-9\\.\\-_]{3,30}?)(?:@|\\b)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s*:?\\s*([a-zA-Z0-9\\s\\.\\*\\&\\-\\/]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit|total|bal|cr|dr)\\b"),
             // P2P UPI: "PRAHALAD SINGH credited" — name appears before "credited"
@@ -538,7 +539,7 @@ object FinanceParser {
         }
 
         // Credit Card payments with no extractable merchant — fall back to "[Bank] Credit Card"
-        if (merchant == "Unknown Merchant" && category == "Bill" && b.contains("credit card")) {
+        if (merchant == "Unknown Merchant" && (category == "Bill" || category == "Refund" || category == "Cashback") && b.contains("credit card")) {
             merchant = if (bank != "Unknown Bank") "$bank Credit Card" else "Credit Card"
         }
 
