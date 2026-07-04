@@ -65,4 +65,18 @@ export const smsService = {
     }
     return FinanceCoreModule.openFinancialApp(packageName);
   },
+
+  isBatteryOptimizationIgnored: async (): Promise<boolean> => {
+    if (Platform.OS !== 'android' || !FinanceCoreModule || !FinanceCoreModule.isBatteryOptimizationIgnored) {
+      return true;
+    }
+    return FinanceCoreModule.isBatteryOptimizationIgnored();
+  },
+
+  requestIgnoreBatteryOptimizations: async (): Promise<boolean> => {
+    if (Platform.OS !== 'android' || !FinanceCoreModule || !FinanceCoreModule.requestIgnoreBatteryOptimizations) {
+      return false;
+    }
+    return FinanceCoreModule.requestIgnoreBatteryOptimizations();
+  },
 };

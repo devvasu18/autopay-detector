@@ -41,23 +41,25 @@ class SMSReceiver : BroadcastReceiver() {
                     if (FinanceParser.isFinancialSMS(address, body)) {
                         val parsed = FinanceParser.parseFinancialSMS(smsId, address, body, date)
                         if (parsed != null) {
-                            val stmtTx = db.compileStatement("""
-                                INSERT OR REPLACE INTO transactions 
-                                (sms_id, merchant, amount, date, payment_method, bank, type, category, confidence, status, raw_body)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """)
-                            stmtTx.bindString(1, parsed.smsId)
-                            stmtTx.bindString(2, parsed.merchant)
-                            stmtTx.bindDouble(3, parsed.amount)
-                            stmtTx.bindLong(4, parsed.date)
-                            stmtTx.bindString(5, parsed.paymentMethod)
-                            stmtTx.bindString(6, parsed.bank)
-                            stmtTx.bindString(7, parsed.type)
-                            stmtTx.bindString(8, parsed.category)
-                            stmtTx.bindDouble(9, parsed.confidence)
-                            stmtTx.bindString(10, parsed.status)
-                            stmtTx.bindString(11, parsed.rawBody)
-                            stmtTx.executeInsert()
+                            if (!parsed.isSetupOrCancellation) {
+                                val stmtTx = db.compileStatement("""
+                                    INSERT OR REPLACE INTO transactions 
+                                    (sms_id, merchant, amount, date, payment_method, bank, type, category, confidence, status, raw_body)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """)
+                                stmtTx.bindString(1, parsed.smsId)
+                                stmtTx.bindString(2, parsed.merchant)
+                                stmtTx.bindDouble(3, parsed.amount)
+                                stmtTx.bindLong(4, parsed.date)
+                                stmtTx.bindString(5, parsed.paymentMethod)
+                                stmtTx.bindString(6, parsed.bank)
+                                stmtTx.bindString(7, parsed.type)
+                                stmtTx.bindString(8, parsed.category)
+                                stmtTx.bindDouble(9, parsed.confidence)
+                                stmtTx.bindString(10, parsed.status)
+                                stmtTx.bindString(11, parsed.rawBody)
+                                stmtTx.executeInsert()
+                            }
 
                             if (parsed.isAutoPay) {
                                 val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant, parsed.amount)
@@ -147,10 +149,17 @@ class SMSReceiver : BroadcastReceiver() {
         val voiceUpcoming = querySetting(db, "voice_upcoming", "true") == "true"
         val voiceLang = querySetting(db, "voice_language", "en")
 
-        var shouldSpeak = false
-        var isUpcoming = tx.isAutoPay && tx.type == "DEBIT"
+        val isCancelled = tx.isSetupOrCancellation && tx.autoPayStatus == "Cancelled"
+        val isCreated = tx.isSetupOrCancellation && tx.autoPayStatus == "Active"
 
-        if (tx.type == "CREDIT" && voiceCredit) {
+        var shouldSpeak = false
+        var isUpcoming = tx.isAutoPay && tx.type == "DEBIT" && !tx.isSetupOrCancellation
+
+        if (tx.isSetupOrCancellation) {
+            if (voiceUpcoming) {
+                shouldSpeak = true
+            }
+        } else if (tx.type == "CREDIT" && voiceCredit) {
             shouldSpeak = true
         } else if (tx.type == "DEBIT") {
             if (tx.isAutoPay && voiceUpcoming) {
@@ -167,9 +176,18 @@ class SMSReceiver : BroadcastReceiver() {
         val merchant = tx.merchant
         var text = ""
 
-        when (voiceLang) {
-            "hi" -> {
-                text = if (isUpcoming) {
+        if (isCancelled || isCreated) {
+            text = if (voiceLang == "hi") {
+                if (isCancelled) "${merchant} के लिए ऑटोपे रद्द कर दिया गया है"
+                else "${merchant} के लिए ${amount} रुपये का ऑटोपे सक्रिय हो गया है"
+            } else {
+                if (isCancelled) "Autopay for ${merchant} has been cancelled"
+                else "Autopay for ${merchant} of rupees ${amount} has been created"
+            }
+        } else {
+            when (voiceLang) {
+                "hi" -> {
+                    text = if (isUpcoming) {
                     "याद दिलाएं: $merchant के लिए $amount रुपये का आगामी भुगतान"
                 } else if (tx.type == "CREDIT") {
                     "$merchant से $amount रुपये प्राप्त हुए"
@@ -259,6 +277,7 @@ class SMSReceiver : BroadcastReceiver() {
                 }
             }
         }
+    }
 
         val locale = when (voiceLang) {
             "hi" -> Locale("hi", "IN")

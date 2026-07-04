@@ -127,6 +127,19 @@ const LOCAL_DOMAINS: { [key: string]: string } = {
   'hdfc life': 'hdfclife.com',
   'sbi life': 'sbilife.co.in',
   'star health': 'starhealth.in',
+
+  // Mattress & Furniture Brands
+  'wakefit': 'wakefit.co',
+  'the sleep company': 'thesleepcompany.in',
+  'sleep company': 'thesleepcompany.in',
+  'duroflex': 'duroflexworld.com',
+  'sleepwell': 'mysleepwell.com',
+  'sleepycat': 'sleepycat.in',
+  'kurlon': 'kurlon.com',
+  'flo mattress': 'flomattress.com',
+  'sleepyhead': 'mysleepyhead.com',
+  'sunday mattress': 'sundayrest.com',
+  'emma sleep': 'emma-sleep.in',
 };
 
 export const getMerchantDomain = (merchantName: string): string | null => {

@@ -150,15 +150,32 @@ function AppContent() {
 
   // Custom Navigation Event Listener for "See All" triggers
   useEffect(() => {
-    const navSub = DeviceEventEmitter.addListener('navigate', (target: string) => {
-      if (
-        target === 'Home' ||
-        target === 'AutoPay' ||
-        target === 'Transactions' ||
-        target === 'Analytics' ||
-        target === 'Profile'
-      ) {
-        setActiveTab(target);
+    const navSub = DeviceEventEmitter.addListener('navigate', (target: any) => {
+      if (typeof target === 'string') {
+        if (
+          target === 'Home' ||
+          target === 'AutoPay' ||
+          target === 'Transactions' ||
+          target === 'Analytics' ||
+          target === 'Profile'
+        ) {
+          setActiveTab(target);
+        }
+      } else if (target && typeof target === 'object') {
+        if (
+          target.screen === 'Home' ||
+          target.screen === 'AutoPay' ||
+          target.screen === 'Transactions' ||
+          target.screen === 'Analytics' ||
+          target.screen === 'Profile'
+        ) {
+          setActiveTab(target.screen);
+          if (target.category) {
+            setTimeout(() => {
+              DeviceEventEmitter.emit('filterCategory', target.category);
+            }, 100);
+          }
+        }
       }
     });
     return () => {

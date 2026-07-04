@@ -117,6 +117,15 @@ export const TransactionsScreen: React.FC = () => {
   }, [search, selectedCategory, selectedType, sortOrder, fetchTransactions]);
 
   useEffect(() => {
+    const filterSub = DeviceEventEmitter.addListener('filterCategory', (category: string) => {
+      setSelectedCategory(category);
+    });
+    return () => {
+      filterSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('onNewTransaction', () => {
       setPage(0);
       fetchTransactions(0, true);

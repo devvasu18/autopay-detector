@@ -28,7 +28,8 @@ object FinanceParser {
         val isAutoPay: Boolean,
         val frequency: String,
         val upiId: String,
-        val autoPayStatus: String
+        val autoPayStatus: String,
+        val isSetupOrCancellation: Boolean
     )
 
     private fun isPromotional(body: String): Boolean {
@@ -121,7 +122,15 @@ object FinanceParser {
             return false
         }
 
-        // 3. Bill generated / Invoice Alerts (liability reminders, not transactions)
+        // 3. Telecom Carrier Data Consumption/Usage Warning Alerts (not transactions)
+        if (b.contains("data is consumed") || b.contains("data consumed") || 
+            b.contains("high speed data") || b.contains("data limit") || 
+            b.contains("daily data") || b.contains("speed data limit")
+        ) {
+            return false
+        }
+
+        // 4. Bill generated / Invoice Alerts (liability reminders, not transactions)
         if (b.contains("bill") && (b.contains("generated") || b.contains("has been generated") || b.contains("is generated"))) {
             return false
         }
@@ -289,9 +298,9 @@ object FinanceParser {
             category = "OTT"
         } else if (b.contains("apple") || b.contains("google play") || b.contains("subscription") || b.contains("prime membership")) {
             category = "Subscription"
-        } else if (b.contains("emi") || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
+        } else if (emiPattern.matcher(b).find() || b.contains("loan") || b.contains("housing finance") || b.contains("car loan")) {
             category = "Loan / EMI"
-        } else if (b.contains("sip") || b.contains("mutual fund") || b.contains("groww") || 
+        } else if (sipPattern.matcher(b).find() || b.contains("mutual fund") || b.contains("groww") || 
             b.contains("zerodha") || b.contains("upstox") || b.contains("investment")) {
             category = "Investment"
         } else if (b.contains("electricity") || b.contains("power") || b.contains("bescom") || 
@@ -318,20 +327,42 @@ object FinanceParser {
 
         var merchant = "Unknown Merchant"
         val merchantPatterns = listOf(
-            Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30})\\s*(?:from|is|was|has|on|ref|via|any|umn)"),
-            Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30})\\s*(?:is|was|has|on|ref|via|any)"),
-            Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20})\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
+            Pattern.compile("(?:created towards|towards|mandate towards|payment towards)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:for|from|is|was|has|on|ref|via|any|umn)"),
+            Pattern.compile("(?:subscription to|payment for|payment to)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*(?:is|was|has|on|ref|via|any)"),
+            Pattern.compile("(?:sent to|paid to|spent on|at)\\s+([a-zA-Z0-9\\s\\.\\*\\&]{3,20}?)\\s*(?:on|via|using|from|for|balance|ref|rrn|vpa)"),
+            Pattern.compile("(?:for your|your)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s+(?:order|membership|subscription|purchase|booking)"),
             Pattern.compile("info:\\s*([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("debited\\s+at\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
-            Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})")
+            Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
+            Pattern.compile("(?:transfer from|received from|credited from|sent from|from)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s*\\b(?:upi|ref|rrn|txn|on|at|is|was|has|to|balance|avbl|limit)\\b")
         )
 
         for (pattern in merchantPatterns) {
             val matcher = pattern.matcher(b)
             if (matcher.find()) {
-                merchant = matcher.group(1)?.trim() ?: "Unknown Merchant"
-                merchant = merchant.split(" txn ")[0].split(" ref ")[0].split(" date ")[0].trim()
+                val tempMerchant = matcher.group(1)?.trim() ?: "Unknown Merchant"
+                var cleanedMerchant = tempMerchant.split(" txn ")[0].split(" ref ")[0].split(" date ")[0].trim()
+                if (cleanedMerchant.endsWith(".")) {
+                    cleanedMerchant = cleanedMerchant.substring(0, cleanedMerchant.length - 1).trim()
+                }
+                val lowerM = cleanedMerchant.lowercase(Locale.US)
+                if (lowerM.contains("a/c") || lowerM.contains("acct") || lowerM.contains("account") || 
+                    lowerM.contains("card") || lowerM.contains("ending") || lowerM.contains("bank") || 
+                    lowerM.contains("no:") || lowerM.length < 3) {
+                    continue
+                }
+                merchant = cleanedMerchant
                 break
+            }
+        }
+
+        if (merchant == "Unknown Merchant" && b.contains("atm")) {
+            val atmPattern = Pattern.compile("atm\\*([a-zA-Z0-9\\-_]+)\\*")
+            val atmMatcher = atmPattern.matcher(b)
+            if (atmMatcher.find()) {
+                merchant = "ATM " + (atmMatcher.group(1)?.uppercase(Locale.US) ?: "")
+            } else {
+                merchant = "ATM Withdrawal"
             }
         }
 
@@ -373,7 +404,7 @@ object FinanceParser {
 
         var type = "DEBIT"
         if (isDebitOnlyCategory) {
-            if (hasCreditProof(category, body) && (b.contains("credited") || b.contains("received") || b.contains("deposited"))) {
+            if (hasCreditProof(category, body) && (b.contains("credited") || b.contains("received") || b.contains("deposited") || b.contains("disbursed") || b.contains("refund"))) {
                 type = "CREDIT"
             }
         } else {
@@ -405,6 +436,11 @@ object FinanceParser {
             b.contains("si") || b.contains("nach") || b.contains("ach") || b.contains("ecs") || 
             b.contains("renewal successful") || b.contains("subscription renewed") || b.contains("renewed successfully")
 
+        var finalCategory = category
+        if (isAutoPay && finalCategory == "Others") {
+            finalCategory = "Subscription"
+        }
+
         var autoPayStatus = "Active"
         if (b.contains("cancel") || b.contains("revoked") || b.contains("deactivated") || b.contains("stopped")) {
             autoPayStatus = "Cancelled"
@@ -426,6 +462,16 @@ object FinanceParser {
             upiId = upiMatcher.group(1) ?: ""
         }
 
+        val isSetupOrCancellation = isAutoPay && (
+            b.contains("created") || 
+            b.contains("cancelled") || 
+            b.contains("cancel") || 
+            b.contains("registered") || 
+            b.contains("revoked") || 
+            b.contains("deactivated") || 
+            b.contains("stopped")
+        ) && !b.contains("debited") && !b.contains("paid") && !b.contains("spent")
+
         return ParsedSMS(
             smsId = smsId,
             merchant = merchant,
@@ -434,14 +480,15 @@ object FinanceParser {
             paymentMethod = paymentMethod,
             bank = bank,
             type = type,
-            category = category,
-            confidence = if (category == "Others" && merchant == "Unknown Merchant") 0.6 else 0.95,
+            category = finalCategory,
+            confidence = if (finalCategory == "Others" && merchant == "Unknown Merchant") 0.6 else 0.95,
             status = if (b.contains("failed") || b.contains("declined")) "Failed" else "Success",
             rawBody = body,
             isAutoPay = isAutoPay,
             frequency = "Monthly",
             upiId = upiId,
-            autoPayStatus = autoPayStatus
+            autoPayStatus = autoPayStatus,
+            isSetupOrCancellation = isSetupOrCancellation
         )
     }
 

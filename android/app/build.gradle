@@ -117,3 +117,9 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+tasks.withType(Test) {
+    testLogging {
+        showStandardStreams = true
+    }
+}

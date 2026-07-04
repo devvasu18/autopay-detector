@@ -95,6 +95,16 @@ const LOCAL_LOGOS: { [key: string]: any } = {
   'hdfclife': require('../assets/logos/hdfclife.png'),
   'sbilife': require('../assets/logos/sbilife.png'),
   'starhealth': require('../assets/logos/starhealth.png'),
+  'wakefit': require('../assets/logos/wakefit.png'),
+  'thesleepcompany': require('../assets/logos/thesleepcompany.png'),
+  'duroflex': require('../assets/logos/duroflex.png'),
+  'sleepwell': require('../assets/logos/sleepwell.png'),
+  'sleepycat': require('../assets/logos/sleepycat.png'),
+  'kurlon': require('../assets/logos/kurlon.png'),
+  'flomattress': require('../assets/logos/flomattress.png'),
+  'sleepyhead': require('../assets/logos/sleepyhead.png'),
+  'sundaymattress': require('../assets/logos/sundaymattress.png'),
+  'emmasleep': require('../assets/logos/emmasleep.png'),
 };
 
 export const MerchantLogo: React.FC<MerchantLogoProps> = ({ name, size = 40 }) => {

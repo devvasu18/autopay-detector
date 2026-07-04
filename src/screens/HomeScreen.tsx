@@ -38,6 +38,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   });
   const [upcomingAutoPays, setUpcomingAutoPays] = useState<AutoPay[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState<boolean>(true);
 
   // Soundbox & Voice settings
   const [soundboxSettings, setSoundboxSettings] = useState({
@@ -276,13 +277,19 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     setHasPermission(isGranted);
   }, []);
 
+  const checkBatteryStatus = useCallback(async () => {
+    const ignored = await smsService.isBatteryOptimizationIgnored();
+    setBatteryOptimizationIgnored(ignored);
+  }, []);
+
   const initData = useCallback(async () => {
     setLoading(true);
     await checkPermissionState();
+    await checkBatteryStatus();
     await fetchStats(selectedPeriod);
     await loadVoiceSettings();
     setLoading(false);
-  }, [checkPermissionState, fetchStats, loadVoiceSettings, selectedPeriod]);
+  }, [checkPermissionState, checkBatteryStatus, fetchStats, loadVoiceSettings, selectedPeriod]);
 
   useEffect(() => {
     initData();
@@ -306,16 +313,18 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     const appStateSub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         checkPermissionState();
+        checkBatteryStatus();
       }
     });
     return () => {
       appStateSub.remove();
     };
-  }, [checkPermissionState]);
+  }, [checkPermissionState, checkBatteryStatus]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await checkPermissionState();
+    await checkBatteryStatus();
     await fetchStats(selectedPeriod);
     await loadVoiceSettings();
     setRefreshing(false);
@@ -524,6 +533,37 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
           </View>
         )}
 
+        {/* Battery Optimization Permission Banner */}
+        {hasPermission === true && !batteryOptimizationIgnored && (
+          <View style={[
+            styles.permissionBanner, 
+            { 
+              backgroundColor: colors.isDark ? '#3A2E1F' : '#FFFBEB', 
+              borderColor: colors.isDark ? '#F59E0B' : '#D97706', 
+              borderWidth: 1,
+              marginTop: 10,
+            }
+          ]}>
+            <Text style={[styles.permissionTitle, { color: colors.isDark ? '#FBBF24' : '#B45309' }]}>
+              ⚠️ Background Alerts Restricted
+            </Text>
+            <Text style={[styles.permissionText, { color: colors.isDark ? '#FDE68A' : '#78350F', marginTop: 4 }]}>
+              Allow the app to always run in the background. Otherwise, Android may block voice announcements when the app is closed.
+            </Text>
+            <TouchableOpacity
+              style={[styles.permissionActionBtn, { backgroundColor: colors.isDark ? '#D97706' : '#B45309', marginTop: 10 }]}
+              onPress={async () => {
+                const success = await smsService.requestIgnoreBatteryOptimizations();
+                if (success) {
+                  setTimeout(checkBatteryStatus, 1000);
+                }
+              }}
+            >
+              <Text style={styles.permissionActionBtnText}>Enable Always Run</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Total Spend & Date Range Card */}
         <View style={[styles.horizontalStatsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View>
@@ -602,14 +642,17 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
         <View style={styles.gridContainer}>
           <View style={styles.gridRow}>
             {/* OTT Card */}
-            <View style={[
-              styles.gridCard,
-              {
-                backgroundColor: colors.isDark ? '#2D1F3F' : '#F5E6FF',
-                borderColor: colors.isDark ? '#5C387F' : '#E8C5FF',
-                shadowColor: colors.isDark ? '#5C387F' : '#8A2BE2',
-              }
-            ]}>
+            <TouchableOpacity 
+              style={[
+                styles.gridCard,
+                {
+                  backgroundColor: colors.isDark ? '#2D1F3F' : '#F5E6FF',
+                  borderColor: colors.isDark ? '#5C387F' : '#E8C5FF',
+                  shadowColor: colors.isDark ? '#5C387F' : '#8A2BE2',
+                }
+              ]}
+              onPress={() => DeviceEventEmitter.emit('navigate', { screen: 'Transactions', category: 'OTT' })}
+            >
               <View style={styles.cardIconHeader}>
                 {renderIconHelper('ott', colors.isDark ? '#D8B4FE' : '#6B21A8')}
                 <Text style={[styles.cardTitleText, { color: colors.isDark ? '#D8B4FE' : '#6B21A8', marginLeft: 8 }]}>OTT</Text>
@@ -618,19 +661,22 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
                 {formatCurrency(stats.ottSpend)}
               </Text>
               <Text style={[styles.cardSubtitleText, { color: colors.isDark ? '#C084FC' : '#701A75' }]}>
-                Subscription spend
+                Entertainment streaming
               </Text>
-            </View>
+            </TouchableOpacity>
 
             {/* Autopay Card */}
-            <View style={[
-              styles.gridCard,
-              {
-                backgroundColor: colors.isDark ? '#1C322E' : '#E6FFFA',
-                borderColor: colors.isDark ? '#2C5E54' : '#B2F5EA',
-                shadowColor: colors.isDark ? '#2C5E54' : '#319795',
-              }
-            ]}>
+            <TouchableOpacity 
+              style={[
+                styles.gridCard,
+                {
+                  backgroundColor: colors.isDark ? '#1C322E' : '#E6FFFA',
+                  borderColor: colors.isDark ? '#2C5E54' : '#B2F5EA',
+                  shadowColor: colors.isDark ? '#2C5E54' : '#319795',
+                }
+              ]}
+              onPress={() => DeviceEventEmitter.emit('navigate', 'AutoPay')}
+            >
               <View style={styles.cardIconHeader}>
                 {renderIconHelper('sync', colors.isDark ? '#81E6D9' : '#007769')}
                 <Text style={[styles.cardTitleText, { color: colors.isDark ? '#81E6D9' : '#007769', marginLeft: 8 }]}>Autopay</Text>
@@ -641,7 +687,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               <Text style={[styles.cardSubtitleText, { color: colors.isDark ? '#4FD1C5' : '#006D5B' }]}>
                 Scheduled debits
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.gridRow}>
@@ -667,14 +713,17 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             </View>
 
             {/* Recharge Card */}
-            <View style={[
-              styles.gridCard,
-              {
-                backgroundColor: colors.isDark ? '#3D281F' : '#FFF5F5',
-                borderColor: colors.isDark ? '#6B4A3A' : '#FED7D7',
-                shadowColor: colors.isDark ? '#6B4A3A' : '#E53E3E',
-              }
-            ]}>
+            <TouchableOpacity 
+              style={[
+                styles.gridCard,
+                {
+                  backgroundColor: colors.isDark ? '#3D281F' : '#FFF5F5',
+                  borderColor: colors.isDark ? '#6B4A3A' : '#FED7D7',
+                  shadowColor: colors.isDark ? '#6B4A3A' : '#E53E3E',
+                }
+              ]}
+              onPress={() => DeviceEventEmitter.emit('navigate', { screen: 'Transactions', category: 'Recharge' })}
+            >
               <View style={styles.cardIconHeader}>
                 {renderIconHelper('recharge', colors.isDark ? '#FEB2B2' : '#9B2C2C')}
                 <Text style={[styles.cardTitleText, { color: colors.isDark ? '#FEB2B2' : '#9B2C2C', marginLeft: 8 }]}>Recharge</Text>
@@ -685,7 +734,7 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               <Text style={[styles.cardSubtitleText, { color: colors.isDark ? '#FC8181' : '#9B2C2C' }]}>
                 Mobile & utility
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -702,9 +751,9 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               {upcomingAutoPays.map((ap) => (
                 <View key={ap.id} style={[styles.autoPayCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.autoPayRow}>
-                    <Text style={[styles.autoPayMerchant, { color: colors.text }]}>{ap.merchant}</Text>
-                    <View style={[styles.badge, { backgroundColor: colors.success + '20' }]}>
-                      <Text style={[styles.badgeText, { color: colors.textGreen }]}>{ap.status}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <MerchantLogo name={ap.merchant} size={24} />
+                      <Text style={[styles.autoPayMerchant, { color: colors.text, marginLeft: 8 }]}>{ap.merchant}</Text>
                     </View>
                   </View>
                   <Text style={[styles.autoPayAmount, { color: colors.text }]}>{formatCurrency(ap.amount)}</Text>
@@ -874,6 +923,40 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
                   <Text style={[styles.langSelectorArrow, { color: colors.primary }]}> ›</Text>
                 </View>
               </TouchableOpacity>
+
+              {!batteryOptimizationIgnored && (
+                <TouchableOpacity
+                  style={[
+                    styles.settingRow, 
+                    { 
+                      borderTopWidth: 1, 
+                      borderTopColor: colors.border, 
+                      marginTop: 10, 
+                      paddingTop: 15,
+                      backgroundColor: colors.isDark ? 'rgba(217, 119, 6, 0.1)' : 'rgba(217, 119, 6, 0.05)' 
+                    }
+                  ]}
+                  onPress={async () => {
+                    const success = await smsService.requestIgnoreBatteryOptimizations();
+                    if (success) {
+                      setTimeout(checkBatteryStatus, 1000);
+                    }
+                  }}
+                >
+                  <View style={styles.settingInfo}>
+                    <Text style={[styles.settingTitle, { color: colors.isDark ? '#FBBF24' : '#B45309' }]}>⚠️ Background Execution</Text>
+                    <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                      Exempt from battery optimization for background voice alerts
+                    </Text>
+                  </View>
+                  <View style={styles.langSelectorValue}>
+                    <Text style={[styles.langSelectorText, { color: colors.isDark ? '#F59E0B' : '#D97706', fontWeight: 'bold' }]}>
+                      Fix Now
+                    </Text>
+                    <Text style={[styles.langSelectorArrow, { color: colors.isDark ? '#F59E0B' : '#D97706' }]}> ›</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
 
             <TouchableOpacity

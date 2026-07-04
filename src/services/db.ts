@@ -182,7 +182,7 @@ export const db = {
     );
 
     const ottRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category IN ('Subscription', 'OTT')" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'OTT'" + dateCond,
       params
     );
     const autopayRes = await db.execute(

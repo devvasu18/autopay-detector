@@ -13,6 +13,8 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 import java.util.Locale
 import java.util.concurrent.Executors
 import android.speech.tts.TextToSpeech
+import android.os.PowerManager
+import android.provider.Settings
 
 class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -249,23 +251,25 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
                             if (FinanceParser.isFinancialSMS(address, body)) {
                                 val parsed = FinanceParser.parseFinancialSMS(smsId, address ?: "", body ?: "", date)
                                 if (parsed != null) {
-                                    val stmtTx = db.compileStatement("""
-                                        INSERT OR REPLACE INTO transactions 
-                                        (sms_id, merchant, amount, date, payment_method, bank, type, category, confidence, status, raw_body)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                    """)
-                                    stmtTx.bindString(1, parsed.smsId)
-                                    stmtTx.bindString(2, parsed.merchant)
-                                    stmtTx.bindDouble(3, parsed.amount)
-                                    stmtTx.bindLong(4, parsed.date)
-                                    stmtTx.bindString(5, parsed.paymentMethod)
-                                    stmtTx.bindString(6, parsed.bank)
-                                    stmtTx.bindString(7, parsed.type)
-                                    stmtTx.bindString(8, parsed.category)
-                                    stmtTx.bindDouble(9, parsed.confidence)
-                                    stmtTx.bindString(10, parsed.status)
-                                    stmtTx.bindString(11, parsed.rawBody)
-                                    stmtTx.executeInsert()
+                                    if (!parsed.isSetupOrCancellation) {
+                                        val stmtTx = db.compileStatement("""
+                                            INSERT OR REPLACE INTO transactions 
+                                            (sms_id, merchant, amount, date, payment_method, bank, type, category, confidence, status, raw_body)
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        """)
+                                        stmtTx.bindString(1, parsed.smsId)
+                                        stmtTx.bindString(2, parsed.merchant)
+                                        stmtTx.bindDouble(3, parsed.amount)
+                                        stmtTx.bindLong(4, parsed.date)
+                                        stmtTx.bindString(5, parsed.paymentMethod)
+                                        stmtTx.bindString(6, parsed.bank)
+                                        stmtTx.bindString(7, parsed.type)
+                                        stmtTx.bindString(8, parsed.category)
+                                        stmtTx.bindDouble(9, parsed.confidence)
+                                        stmtTx.bindString(10, parsed.status)
+                                        stmtTx.bindString(11, parsed.rawBody)
+                                        stmtTx.executeInsert()
+                                    }
 
                                      if (parsed.isAutoPay) {
                                          val existingFirst = FinanceParser.queryAutoPayFirstDetected(db, parsed.merchant, parsed.amount)
@@ -383,7 +387,32 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
             promise.reject("TTS_NULL", "TextToSpeech is null")
         }
     }
+    @ReactMethod
+    fun isBatteryOptimizationIgnored(promise: Promise) {
+        val pm = reactApplicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val packageName = reactApplicationContext.packageName
+        promise.resolve(pm.isIgnoringBatteryOptimizations(packageName))
+    }
 
+    @ReactMethod
+    fun requestIgnoreBatteryOptimizations(promise: Promise) {
+        val pm = reactApplicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val packageName = reactApplicationContext.packageName
+        if (pm.isIgnoringBatteryOptimizations(packageName)) {
+            promise.resolve(true)
+            return
+        }
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            reactApplicationContext.startActivity(intent)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("REQUEST_FAILED", e.message, e)
+        }
+    }
     companion object {
         var instance: FinanceCoreModule? = null
     }
