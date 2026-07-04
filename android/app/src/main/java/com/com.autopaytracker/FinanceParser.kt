@@ -380,6 +380,8 @@ object FinanceParser {
             category = "Shopping"
         } else if (b.contains("cheque") || b.contains("chq") || b.contains("check no") || b.contains("cleared")) {
             category = "Bank Transfer"
+        } else if (b.contains("imps") || b.contains("neft") || b.contains("rtgs")) {
+            category = "Bank Transfer"
         } else if ((b.contains("sent rs") || b.contains("sent inr") || b.contains("sent ₹") ||
             b.contains("transferred rs") || b.contains("transferred inr")) &&
             (b.contains("upi") || (b.contains("from") && b.contains("to")))) {
@@ -418,6 +420,7 @@ object FinanceParser {
             Pattern.compile("transfer to\\s+([a-zA-Z0-9\\s\\.\\*]{3,20})"),
             Pattern.compile("InfoACH\\*([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("InfoBIL\\*(?:INFT\\*)?([a-zA-Z0-9\\s\\.\\*\\&\\-]{2,20}?)", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("(?:info|ref)\\s+(?:neft|imps|rtgs|upi)[-/\\*\\s]+[a-zA-Z0-9]{8,25}[-/\\*\\s]+([a-zA-Z0-9\\s\\*\\&\\-]{2,30}?)(?:\\.|\\b(?:on|at|is|was|has|available|bal|balance|ref|if|revised)\\b|$)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:raised by|mandate raised by)\\s+([a-zA-Z0-9\\s\\.\\*\\&\\-\\,]{3,30}?)\\s*(?:on|from|is|was|has|via|ref|\\$)"),
             Pattern.compile("([a-zA-Z0-9\\s\\.\\*\\&\\-]{3,30}?)\\s+(?:refund|reversal)\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(?:from vpa|vpa)\\s+([a-zA-Z0-9\\.\\-_]{3,30}?)(?:@|\\b)", Pattern.CASE_INSENSITIVE),
