@@ -251,7 +251,7 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
                             if (FinanceParser.isFinancialSMS(address, body)) {
                                 val parsed = FinanceParser.parseFinancialSMS(smsId, address ?: "", body ?: "", date)
                                 if (parsed != null) {
-                                    if (!parsed.isSetupOrCancellation) {
+                                     if (!parsed.isSetupOrCancellation && parsed.status != "Scheduled") {
                                         val stmtTx = db.compileStatement("""
                                             INSERT OR REPLACE INTO transactions 
                                             (sms_id, merchant, amount, date, payment_method, bank, type, category, confidence, status, raw_body)

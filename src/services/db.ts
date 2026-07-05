@@ -151,6 +151,26 @@ export const db = {
       console.warn('Retroactive clean-up migration failed:', e);
     }
 
+    // Retroactive cleanup of requested money notifications
+    try {
+      await db.execute(`
+        DELETE FROM transactions 
+        WHERE raw_body LIKE '%requested money%'
+      `);
+    } catch (e) {
+      console.warn('Requested money cleanup failed:', e);
+    }
+
+    // Retroactive cleanup of scheduled reminder transactions (which are not completed debits)
+    try {
+      await db.execute(`
+        DELETE FROM transactions 
+        WHERE status = 'Scheduled'
+      `);
+    } catch (e) {
+      console.warn('Scheduled transactions cleanup failed:', e);
+    }
+
     let dateCond = '';
     const params: any[] = [];
     if (startDate) {
@@ -159,11 +179,11 @@ export const db = {
     }
 
     const incomeRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'CREDIT'" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'CREDIT' AND status != 'Failed'" + dateCond,
       params
     );
     const expenseRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT'" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND status != 'Failed'" + dateCond,
       params
     );
     const activeAutoPayRes = await db.execute(
@@ -173,7 +193,7 @@ export const db = {
       "SELECT COUNT(*) as count FROM autopay"
     );
     const largestExpenseRes = await db.execute(
-      "SELECT merchant, amount, date FROM transactions WHERE type = 'DEBIT'" + dateCond + " ORDER BY amount DESC LIMIT 1",
+      "SELECT merchant, amount, date FROM transactions WHERE type = 'DEBIT' AND status != 'Failed'" + dateCond + " ORDER BY amount DESC LIMIT 1",
       params
     );
     const recentTxRes = await db.execute(
@@ -182,19 +202,19 @@ export const db = {
     );
 
     const ottRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'OTT'" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND status != 'Failed' AND category = 'OTT'" + dateCond,
       params
     );
     const autopayRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND sms_id IN (SELECT DISTINCT sms_id FROM autopay)" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND status != 'Failed' AND sms_id IN (SELECT DISTINCT sms_id FROM autopay)" + dateCond,
       params
     );
     const bankRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND (payment_method = 'Bank Transfer' OR category = 'Loan / EMI')" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND status != 'Failed' AND (payment_method = 'Bank Transfer' OR category = 'Loan / EMI')" + dateCond,
       params
     );
     const rechargeRes = await db.execute(
-      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND category = 'Recharge'" + dateCond,
+      "SELECT SUM(amount) as total FROM transactions WHERE type = 'DEBIT' AND status != 'Failed' AND category = 'Recharge'" + dateCond,
       params
     );
 
@@ -292,7 +312,7 @@ export const db = {
         payment_method: 'Bank Transfer',
         bank: 'SBI',
         type: 'CREDIT',
-        category: 'Salary',
+        category: 'Bank Transfer',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'Dear Customer, your A/c ending 9876 has been credited with Salary Rs 85,000.00 on 30-Jun-2026. - State Bank of India',
@@ -452,7 +472,7 @@ export const db = {
         payment_method: 'UPI',
         bank: 'ICICI Bank',
         type: 'CREDIT',
-        category: 'Cashback',
+        category: 'Others',
         confidence: 0.95,
         status: 'Success',
         raw_body: 'Cashback of Rs 150.00 credited to ICICI Bank A/c ending 1234 for Amazon pay shopping transaction.',

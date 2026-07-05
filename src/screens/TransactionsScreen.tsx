@@ -36,8 +36,6 @@ export const TransactionsScreen: React.FC = () => {
     'Recharge',
     'OTT',
     'Insurance',
-    'Salary',
-    'Cashback',
     'Refund',
     'Investment',
     'Loan / EMI',
