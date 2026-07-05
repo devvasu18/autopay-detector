@@ -686,6 +686,10 @@ object FinanceParser {
             finalCategory = "Subscription"
         }
 
+        if ((finalCategory == "Others" || finalCategory == "Bank Transfer") && isHumanName(merchant)) {
+            finalCategory = "Peoples"
+        }
+
         var autoPayStatus = "Active"
         if (b.contains("cancel") || b.contains("revoked") || b.contains("deactivated") || b.contains("stopped")) {
             autoPayStatus = "Cancelled"
@@ -773,5 +777,53 @@ object FinanceParser {
         }
         cursor.close()
         return lastPayment
+    }
+
+    private fun isHumanName(name: String): Boolean {
+        if (name.isEmpty() || name == "Unknown Merchant") return false
+        
+        var clean = name.trim().lowercase(Locale.US)
+        
+        // Remove common honorifics/titles
+        clean = clean.replace(Regex("^(mr|mrs|ms|dr|prof|mx)\\.?\\s+"), "")
+        
+        // Must contain only letters and spaces
+        if (!clean.matches(Regex("^[a-zA-Z\\s]+$"))) return false
+        
+        // Must be 2 or 3 words
+        val words = clean.trim().split(Regex("\\s+"))
+        if (words.size < 2 || words.size > 3) return false
+        
+        // Check if any word is too short
+        if (words.any { it.length < 2 }) return false
+        
+        // List of non-human merchant/business indicators
+        val businessKeywords = listOf(
+            "ltd", "limited", "pvt", "private", "corp", "corporation", "solutions", "technology", "technologies", 
+            "service", "services", "store", "stores", "shop", "shops", "retail", "food", "foods", "caterer", "caterers", 
+            "communication", "communications", "telecom", "digital", "venture", "ventures", "enterprise", "enterprises", 
+            "agency", "agencies", "travel", "travels", "academy", "school", "college", "university", "hospital", 
+            "lab", "labs", "diagnostics", "clinic", "pharmacy", "associate", "associates", "foundation", "trust", 
+            "club", "association", "bank", "cooperative", "bazaar", "mart", "supermarket", "pay", "payment", "payments",
+            "billing", "recharge", "broadband", "optical", "gas", "electricity", "power", "water",
+            "restaurant", "hotel", "cafe", "dhaba", "sweet", "sweets", "bakery", "dairy", "dairies", "milk", "filling",
+            "petrol", "pump", "oil", "desk", "gateway", "billdes", "billdesk", "distribution", "distributors",
+            "marketing", "media", "entertainment", "fintech", "insurance", "investment", "mutual", "fund", "funds",
+            "salary", "bonus", "reimbursement", "dividend", "interest", "refund"
+        )
+        
+        if (businessKeywords.any { clean.contains(it) }) return false
+        
+        // Also verify it doesn't match any of our common merchants
+        val commonMerchants = listOf(
+            "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one", "google cloud", "google",
+            "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
+            "lic", "airtel", "jio", "vi", "tataplay", "fastag", "scapia", "jar", "milkbasket",
+            "act fibernet", "smytten", "jvvnl", "national pension", "lenskart", "cred_fastag", "irctc"
+        )
+        
+        if (commonMerchants.any { clean.contains(it) }) return false
+        
+        return true
     }
 }

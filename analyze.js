@@ -564,6 +564,10 @@ function parseFinancialSMS(sender, body, date) {
         finalCategory = "Subscription";
     }
 
+    if ((finalCategory === "Others" || finalCategory === "Bank Transfer") && isHumanName(merchant)) {
+        finalCategory = "Peoples";
+    }
+
     let paymentMethod = "UPI";
     if (b.includes("cheque") || b.includes("chq") || b.includes("check no")) {
         paymentMethod = "Cheque";
@@ -612,6 +616,58 @@ function parseFinancialSMS(sender, body, date) {
         isSetupOrCancellation,
         status
     };
+}
+
+function isHumanName(name) {
+    if (!name || name === "Unknown Merchant") return false;
+    
+    let clean = name.trim().toLowerCase();
+    
+    // Remove common honorifics/titles
+    clean = clean.replace(/^(mr|mrs|ms|dr|prof|mx)\.?\s+/i, '');
+    
+    // Must contain only letters and spaces (no digits, no symbols like *, &, @, -, /, etc.)
+    if (!/^[a-zA-Z\s]+$/.test(clean)) return false;
+    
+    // Must be 2 or 3 words (first name + last name, or first + middle + last)
+    const words = clean.trim().split(/\s+/);
+    if (words.length < 2 || words.length > 3) return false;
+    
+    // Check if any word is too short (e.g. single letters are rare for full names)
+    if (words.some(w => w.length < 2)) return false;
+    
+    // List of non-human merchant/business indicators
+    const businessKeywords = [
+        "ltd", "limited", "pvt", "private", "corp", "corporation", "solutions", "technology", "technologies", 
+        "service", "services", "store", "stores", "shop", "shops", "retail", "food", "foods", "caterer", "caterers", 
+        "communication", "communications", "telecom", "digital", "venture", "ventures", "enterprise", "enterprises", 
+        "agency", "agencies", "travel", "travels", "academy", "school", "college", "university", "hospital", 
+        "lab", "labs", "diagnostics", "clinic", "pharmacy", "associate", "associates", "foundation", "trust", 
+        "club", "association", "bank", "cooperative", "bazaar", "mart", "supermarket", "pay", "payment", "payments",
+        "billing", "recharge", "broadband", "optical", "gas", "electricity", "power", "water",
+        "restaurant", "hotel", "cafe", "dhaba", "sweet", "sweets", "bakery", "dairy", "dairies", "milk", "filling",
+        "petrol", "pump", "oil", "desk", "gateway", "billdes", "billdesk", "distribution", "distributors",
+        "marketing", "media", "entertainment", "fintech", "insurance", "investment", "mutual", "fund", "funds",
+        "salary", "bonus", "reimbursement", "dividend", "interest", "refund"
+    ];
+    
+    // If it contains any of these keywords, it's a business
+    if (businessKeywords.some(keyword => clean.includes(keyword))) {
+        return false;
+    }
+    
+    // Also verify it doesn't match any of our common merchants
+    const commonMerchants = [
+        "netflix", "spotify", "amazon prime", "amazon", "youtube", "google play", "google one", "google cloud", "google",
+        "apple", "swiggy", "zomato", "uber", "ola", "flipkart", "myntra", "groww", "zerodha",
+        "lic", "airtel", "jio", "vi", "tataplay", "fastag", "scapia", "jar", "milkbasket",
+        "act fibernet", "smytten", "jvvnl", "national pension", "lenskart", "cred_fastag", "irctc"
+    ];
+    if (commonMerchants.some(m => clean.includes(m))) {
+        return false;
+    }
+    
+    return true;
 }
 
 function unescapeXml(text) {

@@ -28,17 +28,18 @@ export const TransactionsScreen: React.FC = () => {
 
   const categories = [
     'All',
-    'Subscription',
+    'Peoples',
     'Food',
     'Travel / Fuel',
-    'Shopping',
-    'Bill',
-    'Recharge',
     'OTT',
-    'Insurance',
+    'Shopping',
+    'Recharge',
+    'Bill',
+    'Subscription',
     'Refund',
     'Investment',
     'Loan / EMI',
+    'Insurance',
     'Others',
   ];
 
