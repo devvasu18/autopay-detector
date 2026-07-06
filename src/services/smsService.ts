@@ -79,4 +79,18 @@ export const smsService = {
     }
     return FinanceCoreModule.requestIgnoreBatteryOptimizations();
   },
+
+  openAutostartSettings: async (): Promise<boolean> => {
+    if (Platform.OS !== 'android' || !FinanceCoreModule || !FinanceCoreModule.openAutostartSettings) {
+      return false;
+    }
+    return FinanceCoreModule.openAutostartSettings();
+  },
+
+  getDeviceManufacturer: async (): Promise<string> => {
+    if (Platform.OS !== 'android' || !FinanceCoreModule || !FinanceCoreModule.getDeviceManufacturer) {
+      return 'unknown';
+    }
+    return FinanceCoreModule.getDeviceManufacturer();
+  },
 };

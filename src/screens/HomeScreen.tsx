@@ -39,6 +39,8 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   const [upcomingAutoPays, setUpcomingAutoPays] = useState<AutoPay[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [batteryOptimizationIgnored, setBatteryOptimizationIgnored] = useState<boolean>(true);
+  const [deviceManufacturer, setDeviceManufacturer] = useState<string>('unknown');
+  const [oemAutostartDismissed, setOemAutostartDismissed] = useState<boolean>(true);
 
   // Soundbox & Voice settings
   const [soundboxSettings, setSoundboxSettings] = useState({
@@ -280,6 +282,14 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
   const checkBatteryStatus = useCallback(async () => {
     const ignored = await smsService.isBatteryOptimizationIgnored();
     setBatteryOptimizationIgnored(ignored);
+
+    const dismissed = await db.getSetting('oem_autostart_dismissed', 'false');
+    setOemAutostartDismissed(dismissed === 'true');
+
+    if (Platform.OS === 'android') {
+      const manufacturer = await smsService.getDeviceManufacturer();
+      setDeviceManufacturer(manufacturer);
+    }
   }, []);
 
   const initData = useCallback(async () => {
@@ -561,6 +571,64 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
             >
               <Text style={styles.permissionActionBtnText}>Enable Always Run</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* OEM Autostart / Background Protection Warning Banner */}
+        {hasPermission === true && 
+         ['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'vivo', 'iqoo', 'huawei', 'honor'].includes(deviceManufacturer.toLowerCase()) && 
+         !oemAutostartDismissed && (
+          <View style={[
+            styles.permissionBanner, 
+            { 
+              backgroundColor: colors.isDark ? '#3A2E1F' : '#FFFBEB', 
+              borderColor: colors.isDark ? '#F59E0B' : '#D97706', 
+              borderWidth: 1,
+              marginTop: 10,
+            }
+          ]}>
+            <Text style={[styles.permissionTitle, { color: colors.isDark ? '#FBBF24' : '#B45309' }]}>
+              ⚠️ Auto-start Permission Required
+            </Text>
+            <Text style={[styles.permissionText, { color: colors.isDark ? '#FDE68A' : '#78350F', marginTop: 4 }]}>
+              {(() => {
+                const oem = deviceManufacturer.toLowerCase();
+                if (oem.includes('xiaomi') || oem.includes('redmi') || oem.includes('poco')) {
+                  return 'For Xiaomi/Redmi/Poco, you must enable "Autostart" and set Battery Saver to "No Restrictions" so voice notifications can play when the app is closed.';
+                }
+                if (oem.includes('oppo') || oem.includes('realme')) {
+                  return 'For Oppo/Realme, you must enable "Startup Manager" / "Auto-startup" and allow background activity so voice notifications play when closed.';
+                }
+                if (oem.includes('vivo') || oem.includes('iqoo')) {
+                  return 'For Vivo/iQOO, you must enable "Auto-start" and select "High Background Power Consumption" for the app to speak alerts in the background.';
+                }
+                if (oem.includes('huawei') || oem.includes('honor')) {
+                  return 'For Huawei/Honor, set App Launch to "Manage manually" and enable all background and auto-launch permissions.';
+                }
+                return `For your ${deviceManufacturer} device, please check that the app is allowed to auto-start and run in the background.`;
+              })()}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.permissionActionBtn, { backgroundColor: colors.isDark ? '#D97706' : '#B45309', marginRight: 12 }]}
+                onPress={async () => {
+                  await smsService.openAutostartSettings();
+                }}
+              >
+                <Text style={styles.permissionActionBtnText}>Configure Auto-start</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+                onPress={async () => {
+                  await db.setSetting('oem_autostart_dismissed', 'true');
+                  setOemAutostartDismissed(true);
+                }}
+              >
+                <Text style={{ color: colors.isDark ? '#FDE68A' : '#78350F', fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
+                  Dismiss
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -952,6 +1020,37 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
                   <View style={styles.langSelectorValue}>
                     <Text style={[styles.langSelectorText, { color: colors.isDark ? '#F59E0B' : '#D97706', fontWeight: 'bold' }]}>
                       Fix Now
+                    </Text>
+                    <Text style={[styles.langSelectorArrow, { color: colors.isDark ? '#F59E0B' : '#D97706' }]}> ›</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'vivo', 'iqoo', 'huawei', 'honor'].includes(deviceManufacturer.toLowerCase()) && (
+                <TouchableOpacity 
+                  style={[
+                    styles.settingRow, 
+                    { 
+                      borderTopWidth: 1, 
+                      borderTopColor: colors.border, 
+                      marginTop: 10, 
+                      paddingTop: 15,
+                      backgroundColor: colors.isDark ? 'rgba(217, 119, 6, 0.1)' : 'rgba(217, 119, 6, 0.05)' 
+                    }
+                  ]}
+                  onPress={async () => {
+                    await smsService.openAutostartSettings();
+                  }}
+                >
+                  <View style={styles.settingInfo}>
+                    <Text style={[styles.settingTitle, { color: colors.isDark ? '#FBBF24' : '#B45309' }]}>⚠️ Auto-start Permission</Text>
+                    <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
+                      Configure auto-start settings for {deviceManufacturer} to allow background alerts
+                    </Text>
+                  </View>
+                  <View style={styles.langSelectorValue}>
+                    <Text style={[styles.langSelectorText, { color: colors.isDark ? '#F59E0B' : '#D97706', fontWeight: 'bold' }]}>
+                      Configure
                     </Text>
                     <Text style={[styles.langSelectorArrow, { color: colors.isDark ? '#F59E0B' : '#D97706' }]}> ›</Text>
                   </View>

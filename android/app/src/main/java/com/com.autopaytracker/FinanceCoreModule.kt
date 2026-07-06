@@ -2,6 +2,7 @@ package com.autopaytracker
 
 import android.content.Context
 import android.content.Intent
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
@@ -412,6 +413,62 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
         } catch (e: Exception) {
             promise.reject("REQUEST_FAILED", e.message, e)
         }
+    }
+
+    @ReactMethod
+    fun openAutostartSettings(promise: Promise) {
+        val context = reactApplicationContext
+        val manufacturer = android.os.Build.MANUFACTURER.lowercase(Locale.US)
+        val intent = Intent()
+        var foundActivity = false
+
+        val list = listOf(
+            // Xiaomi / Redmi / Poco
+            Pair("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
+            // Oppo / Realme
+            Pair("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"),
+            Pair("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"),
+            Pair("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"),
+            // Vivo
+            Pair("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"),
+            Pair("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"),
+            Pair("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"),
+            // Huawei
+            Pair("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"),
+            Pair("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")
+        )
+
+        for (item in list) {
+            try {
+                intent.component = ComponentName(item.first, item.second)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                foundActivity = true
+                break
+            } catch (e: Exception) {
+                // Try next
+            }
+        }
+
+        if (!foundActivity) {
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
+                foundActivity = true
+            } catch (e: Exception) {
+                promise.reject("OPEN_FAILED", e.message, e)
+                return
+            }
+        }
+        promise.resolve(foundActivity)
+    }
+
+    @ReactMethod
+    fun getDeviceManufacturer(promise: Promise) {
+        promise.resolve(android.os.Build.MANUFACTURER)
     }
     companion object {
         var instance: FinanceCoreModule? = null
