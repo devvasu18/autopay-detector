@@ -1,0 +1,184 @@
+package com.autopaytracker
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import android.util.Log
+import java.util.Locale
+
+class TTSService : Service(), TextToSpeech.OnInitListener {
+    private var tts: TextToSpeech? = null
+    private var textToSpeak: String = ""
+    private var localeToUse: Locale = Locale.US
+    private var isInitialized = false
+
+    companion object {
+        private const val CHANNEL_ID = "TTS_SERVICE_CHANNEL"
+        private const val NOTIFICATION_ID = 1001
+        private const val TAG = "TTSService"
+
+        fun start(context: Context, text: String, locale: Locale) {
+            val intent = Intent(context, TTSService::class.java).apply {
+                putExtra("TEXT", text)
+                putExtra("LOCALE", locale)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        textToSpeak = intent?.getStringExtra("TEXT") ?: ""
+        @Suppress("DEPRECATION")
+        localeToUse = (intent?.getSerializableExtra("LOCALE") as? Locale) ?: Locale.US
+
+        val notification = createNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID, 
+                notification, 
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
+        if (textToSpeak.isNotEmpty()) {
+            if (tts == null) {
+                try {
+                    tts = TextToSpeech(applicationContext, this)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to initialize TTS", e)
+                    stopService()
+                }
+            } else if (isInitialized) {
+                speak()
+            }
+        } else {
+            stopService()
+        }
+
+        return START_NOT_STICKY
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            isInitialized = true
+            speak()
+        } else {
+            Log.e(TAG, "TTS Initialization failed: $status")
+            stopService()
+        }
+    }
+
+    private fun speak() {
+        val currentTts = tts
+        if (currentTts == null) {
+            stopService()
+            return
+        }
+
+        try {
+            currentTts.setSpeechRate(0.8f)
+            val result = currentTts.setLanguage(localeToUse)
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e(TAG, "Language $localeToUse is missing or not supported")
+                stopService()
+                return
+            }
+
+            currentTts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    Log.d(TAG, "Speech started")
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    Log.d(TAG, "Speech completed")
+                    stopService()
+                }
+
+                override fun onError(utteranceId: String?) {
+                    Log.e(TAG, "Utterance progress error: $utteranceId")
+                    stopService()
+                }
+            })
+
+            val params = android.os.Bundle()
+            currentTts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, params, "TTSServiceSpeech")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during speak setup", e)
+            stopService()
+        }
+    }
+
+    private fun createNotification(): Notification {
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+
+        return builder
+            .setContentTitle("Voice Reader")
+            .setContentText("Reading out transaction...")
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .build()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                "Voice Reader Background Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Used to speak transaction details in background"
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(serviceChannel)
+        }
+    }
+
+    private fun stopService() {
+        try {
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during TTS shutdown", e)
+        }
+        stopForeground(true)
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        try {
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during onDestroy TTS shutdown", e)
+        }
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+}

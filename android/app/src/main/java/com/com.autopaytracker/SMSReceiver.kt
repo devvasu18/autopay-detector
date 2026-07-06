@@ -292,84 +292,10 @@ class SMSReceiver : BroadcastReceiver() {
             else -> Locale.US
         }
 
-        var pendingResult: BroadcastReceiver.PendingResult? = null
         try {
-            pendingResult = goAsync()
-            val player = SMSReceiverTTSPlayer(context, text, locale, pendingResult)
-            player.start()
+            TTSService.start(context, text, locale)
         } catch (e: Exception) {
-            Log.e("SMSReceiver", "Error playing background TTS", e)
-            pendingResult?.finish()
+            Log.e("SMSReceiver", "Error starting TTSService", e)
         }
-    }
-}
-
-private class SMSReceiverTTSPlayer(
-    private val context: Context,
-    private val text: String,
-    private val locale: Locale,
-    private val pendingResult: BroadcastReceiver.PendingResult?
-) : TextToSpeech.OnInitListener {
-    private var tts: TextToSpeech? = null
-
-    fun start() {
-        try {
-            tts = TextToSpeech(context.applicationContext, this)
-        } catch (e: Exception) {
-            Log.e("SMSReceiverTTSPlayer", "Failed to create TextToSpeech instance", e)
-            cleanup()
-        }
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val currentTts = tts
-            if (currentTts != null) {
-                speakWithTts(currentTts)
-            } else {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    tts?.let { speakWithTts(it) } ?: cleanup()
-                }
-            }
-        } else {
-            Log.e("SMSReceiverTTSPlayer", "TTS initialization failed with status $status")
-            cleanup()
-        }
-    }
-
-    private fun speakWithTts(t: TextToSpeech) {
-        try {
-            t.setSpeechRate(0.8f)
-            val result = t.setLanguage(locale)
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.e("SMSReceiverTTSPlayer", "Language $locale is missing or not supported")
-                cleanup()
-                return
-            }
-            t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
-                override fun onDone(utteranceId: String?) {
-                    cleanup()
-                }
-                override fun onError(utteranceId: String?) {
-                    Log.e("SMSReceiverTTSPlayer", "Utterance progress error: $utteranceId")
-                    cleanup()
-                }
-            })
-            val params = android.os.Bundle()
-            t.speak(text, TextToSpeech.QUEUE_FLUSH, params, "SMSReceiverTTS")
-        } catch (e: Exception) {
-            Log.e("SMSReceiverTTSPlayer", "Error during speak setup", e)
-            cleanup()
-        }
-    }
-
-    private fun cleanup() {
-        try {
-            tts?.shutdown()
-        } catch (e: Exception) {
-            Log.e("SMSReceiverTTSPlayer", "Error during TTS shutdown", e)
-        }
-        pendingResult?.finish()
     }
 }
