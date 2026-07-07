@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -18,6 +19,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
     private var textToSpeak: String = ""
     private var localeToUse: Locale = Locale.US
     private var isInitialized = false
+    private var wakeLock: PowerManager.WakeLock? = null
 
     companion object {
         private const val CHANNEL_ID = "TTS_SERVICE_CHANNEL"
@@ -56,6 +58,20 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
+        }
+
+        // Acquire wake lock to keep CPU awake while screen is off
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (wakeLock == null) {
+                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AutopayTracker:TTSServiceWakeLock")
+            }
+            if (wakeLock?.isHeld == false) {
+                wakeLock?.acquire(10 * 60 * 1000L /* 10 minutes max */)
+                Log.d(TAG, "WakeLock acquired")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire WakeLock", e)
         }
 
         if (textToSpeak.isNotEmpty()) {
@@ -164,6 +180,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
             Log.e(TAG, "Error during TTS shutdown", e)
         }
         stopForeground(true)
+        releaseWakeLock()
         stopSelf()
     }
 
@@ -175,7 +192,21 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
         } catch (e: Exception) {
             Log.e(TAG, "Error during onDestroy TTS shutdown", e)
         }
+        releaseWakeLock()
         super.onDestroy()
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "WakeLock released")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error releasing WakeLock", e)
+        } finally {
+            wakeLock = null
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? {
