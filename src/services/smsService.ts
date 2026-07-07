@@ -17,10 +17,17 @@ export const smsService = {
       return false;
     }
     try {
-      const granted = await PermissionsAndroid.requestMultiple([
+      const permissions = [
         PermissionsAndroid.PERMISSIONS.READ_SMS,
         PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
-      ]);
+      ];
+
+      const sdkVersion = typeof Platform.Version === 'number' ? Platform.Version : parseInt(Platform.Version, 10);
+      if (sdkVersion >= 33 && PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS) {
+        permissions.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+      }
+
+      const granted = await PermissionsAndroid.requestMultiple(permissions);
       return (
         granted[PermissionsAndroid.PERMISSIONS.READ_SMS] === PermissionsAndroid.RESULTS.GRANTED &&
         granted[PermissionsAndroid.PERMISSIONS.RECEIVE_SMS] === PermissionsAndroid.RESULTS.GRANTED
