@@ -306,18 +306,16 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
     const appStateSub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         checkPermissionState();
-        checkBatteryStatus();
       }
     });
     return () => {
       appStateSub.remove();
     };
-  }, [checkPermissionState, checkBatteryStatus]);
+  }, [checkPermissionState]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await checkPermissionState();
-    await checkBatteryStatus();
     await fetchStats(selectedPeriod);
     await loadVoiceSettings();
     setRefreshing(false);
