@@ -52,6 +52,9 @@ react {
 
     /* Autolinking */
     autolinkLibrariesWithApp()
+
+    /* Bundling in Debug Mode */
+    debuggableVariants = []
 }
 
 /**

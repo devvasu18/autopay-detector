@@ -54,6 +54,12 @@
           </intent-filter>
       </receiver>
 
+      <receiver android:name=".TestSMSReceiver" android:exported="true">
+          <intent-filter>
+              <action android:name="com.autopaytracker.TEST_SMS" />
+          </intent-filter>
+      </receiver>
+
       <service
           android:name=".TTSService"
           android:foregroundServiceType="mediaPlayback"

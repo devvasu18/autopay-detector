@@ -60,52 +60,48 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        // Acquire wake lock to keep CPU awake while screen is off
+        // Acquire wake lock to keep CPU awake while speaking
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             if (wakeLock == null) {
                 wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AutopayTracker:TTSServiceWakeLock")
             }
             if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(10 * 60 * 1000L /* 10 minutes max */)
+                wakeLock?.acquire(5 * 60 * 1000L /* 5 minutes max per speak trigger */)
                 Log.d(TAG, "WakeLock acquired")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to acquire WakeLock", e)
         }
 
-        if (textToSpeak.isNotEmpty()) {
-            if (tts == null) {
-                try {
-                    tts = TextToSpeech(applicationContext, this)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to initialize TTS", e)
-                    stopService()
-                }
-            } else if (isInitialized) {
-                speak()
+        if (tts == null) {
+            try {
+                tts = TextToSpeech(applicationContext, this)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to initialize TTS", e)
             }
-        } else {
-            stopService()
+        } else if (isInitialized && textToSpeak.isNotEmpty()) {
+            speak()
         }
 
-        return START_NOT_STICKY
+        // Return START_STICKY to ensure OS automatically restarts the service if killed
+        return START_STICKY
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             isInitialized = true
-            speak()
+            if (textToSpeak.isNotEmpty()) {
+                speak()
+            }
         } else {
             Log.e(TAG, "TTS Initialization failed: $status")
-            stopService()
         }
     }
 
     private fun speak() {
         val currentTts = tts
         if (currentTts == null) {
-            stopService()
             return
         }
 
@@ -114,7 +110,6 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
             val result = currentTts.setLanguage(localeToUse)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e(TAG, "Language $localeToUse is missing or not supported")
-                stopService()
                 return
             }
 
@@ -125,12 +120,12 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
 
                 override fun onDone(utteranceId: String?) {
                     Log.d(TAG, "Speech completed")
-                    stopService()
+                    releaseWakeLock() // Release cpu wake lock when speech finishes
                 }
 
                 override fun onError(utteranceId: String?) {
                     Log.e(TAG, "Utterance progress error: $utteranceId")
-                    stopService()
+                    releaseWakeLock()
                 }
             })
 
@@ -138,7 +133,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
             currentTts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, params, "TTSServiceSpeech")
         } catch (e: Exception) {
             Log.e(TAG, "Error during speak setup", e)
-            stopService()
+            releaseWakeLock()
         }
     }
 
@@ -151,8 +146,8 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
         }
 
         return builder
-            .setContentTitle("Voice Reader")
-            .setContentText("Reading out transaction...")
+            .setContentTitle("Soundbox Service Active")
+            .setContentText("Listening for transaction notifications...")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .build()
     }

@@ -108,7 +108,7 @@ object FinanceParser {
         val b = body.lowercase(Locale.US)
 
         val hasLetter = s.any { it.isLetter() }
-        if (!hasLetter) return false
+        if (!hasLetter && !b.startsWith("test:") && !b.startsWith("soundbox:")) return false
 
         // 1. OTP / Verification code check
         if (b.contains("otp") || b.contains("one time password") || b.contains("one-time password") || 
@@ -253,9 +253,16 @@ object FinanceParser {
     }
 
     fun parseFinancialSMS(smsId: String, sender: String, body: String, date: Long): ParsedSMS? {
-        if (isPromotional(body)) return null
+        var cleanBody = body
+        if (body.startsWith("test:", ignoreCase = true)) {
+            cleanBody = body.substring(5).trim()
+        } else if (body.startsWith("soundbox:", ignoreCase = true)) {
+            cleanBody = body.substring(9).trim()
+        }
+
+        if (isPromotional(cleanBody)) return null
         
-        val b = body.lowercase(Locale.US)
+        val b = cleanBody.lowercase(Locale.US)
         val s = sender.uppercase(Locale.US)
 
         var amount = 0.0

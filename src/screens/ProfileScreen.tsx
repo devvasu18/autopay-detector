@@ -21,7 +21,8 @@ export const ProfileScreen: React.FC = () => {
     txCount: 0,
     autopayCount: 0,
   });
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [batteryIgnored, setBatteryIgnored] = useState<boolean>(true);
+  const [manufacturer, setManufacturer] = useState<string>('');
 
   const fetchStats = useCallback(async () => {
     try {
@@ -37,6 +38,12 @@ export const ProfileScreen: React.FC = () => {
 
       const perm = await smsService.checkPermission();
       setHasPermission(perm);
+
+      const batt = await smsService.isBatteryOptimizationIgnored();
+      setBatteryIgnored(batt);
+
+      const mfg = await smsService.getDeviceManufacturer();
+      setManufacturer(mfg);
     } catch (err) {
       console.warn('Failed to fetch stats', err);
     }
@@ -105,8 +112,52 @@ export const ProfileScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
+        {/* Background services */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Background Processing</Text>
+        <View style={[styles.settingsList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.settingItem}>
+            <View style={{ flex: 0.7 }}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Battery Optimization</Text>
+              <Text style={[styles.settingSubLabel, { color: colors.textSecondary }]}>
+                {batteryIgnored ? '🔋 Allowed in background' : '⚠️ Battery saver may block background speech'}
+              </Text>
+            </View>
+            {!batteryIgnored && (
+              <TouchableOpacity
+                style={[styles.smallActionBtn, { backgroundColor: colors.primary }]}
+                onPress={async () => {
+                  await smsService.requestIgnoreBatteryOptimizations();
+                  const batt = await smsService.isBatteryOptimizationIgnored();
+                  setBatteryIgnored(batt);
+                }}
+              >
+                <Text style={styles.smallActionBtnText}>Allow</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-
+          {['xiaomi', 'redmi', 'poco', 'oppo', 'realme', 'vivo', 'oneplus', 'unknown'].includes(manufacturer.toLowerCase()) && (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.settingItem}>
+                <View style={{ flex: 0.7 }}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>Auto-start Permission</Text>
+                  <Text style={[styles.settingSubLabel, { color: colors.textSecondary }]}>
+                    Required for {manufacturer || 'your'} device to receive SMS when the app is closed.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.smallActionBtn, { backgroundColor: colors.primary }]}
+                  onPress={async () => {
+                    await smsService.openAutostartSettings();
+                  }}
+                >
+                  <Text style={styles.smallActionBtnText}>Configure</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
 
         {/* Configuration settings */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
@@ -243,6 +294,16 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 13,
+    fontWeight: 'bold',
+  },
+  smallActionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  smallActionBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
