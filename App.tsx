@@ -16,6 +16,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { smsService } from './src/services/smsService';
 import { db } from './src/services/db';
+import { updateService } from './src/services/updateService';
+import { UpdateModal } from './src/components/UpdateModal';
 
 // Import Screens
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -126,8 +128,18 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'Home' | 'AutoPay' | 'Transactions' | 'Analytics' | 'Profile'>('Home');
 
   useEffect(() => {
+    // Run update check on cold start
+    updateService.checkAndUpdate(false).catch(err => {
+      console.error('In-app update check failed on launch:', err);
+    });
+
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
+        // Run update check when app resumes (throttled internally by cache)
+        updateService.checkAndUpdate(false).catch(err => {
+          console.error('In-app update check failed on resume:', err);
+        });
+
         const hasPerm = await smsService.checkPermission();
         if (hasPerm) {
           try {
@@ -323,6 +335,7 @@ function AppContent() {
         visible={isOnboarding}
         onComplete={() => setIsOnboarding(false)}
       />
+      <UpdateModal />
     </SafeAreaView>
   );
 }

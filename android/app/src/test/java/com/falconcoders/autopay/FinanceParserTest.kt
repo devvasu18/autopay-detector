@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import org.junit.Test
 import org.junit.Assert.*

@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import android.app.Application
 import com.facebook.react.PackageList

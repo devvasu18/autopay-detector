@@ -1,0 +1,601 @@
+=== AUTOPAY MESSAGES REPORT ===
+
+[AUTOPAY #1]
+Sender: JD-ICICIT
+Bank: ICICI Bank | Amount: 119 | Type: DEBIT
+Merchant: Spotify India | Category: OTT | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Spotify India for Rs 119.00, RRN 540848819617-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #2]
+Sender: JD-ICICIT
+Bank: ICICI Bank | Amount: 130 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 130.00 for Google Play, as per the Standing Instruction XNfYHeJM9H, on 16/02/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #3]
+Sender: AD-HDFCBK
+Bank: HDFC Bank | Amount: 5000 | Type: DEBIT
+Merchant: Gullak Money | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate Cancelled
+Towards Gullak Money
+For Rs.5000.00
+From HDFC Bank A/c x9400
+UMN 573c33bd5423479395f39ad36fc26e38@okicici"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #4]
+Sender: JD-ICICIT
+Bank: ICICI Bank | Amount: 34638 | Type: DEBIT
+Merchant: ICICI Bank | Category: Loan / EMI | Method: NACH | Status: Failed
+Body: "ECS/NACH of Rs 34638.00 towards HDFC BANK LTD from ICICI Bank Acct  XX7898 has returned on 10-Mar-25 due to Insufficient fund. Applicable return charges will be levied."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #5]
+Sender: VM-HDFCBN
+Bank: HDFC Bank | Amount: 34638 | Type: DEBIT
+Merchant: HDFC Bank | Category: Loan / EMI | Method: NACH | Status: Failed
+Body: "HDFC Bank loan Ac no. xxxx610 - Your payment relating to NACH mandate ref no  for EMI/PEMI with HDFC Bank for Rs.34638 has been returned on 10-MAR-25 by ICICI BANK LTD for the reason BALANCE INSUFFICIENT."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #6]
+Sender: JD-ICICIT
+Bank: ICICI Bank | Amount: 1412.12 | Type: DEBIT
+Merchant: Tp Ach Maxlifeinsura | Category: Insurance | Method: NACH | Status: Failed
+Body: "ECS/NACH of Rs 1412.12 towards TP ACH MAXLIFEINSURA from ICICI Bank Acct  XX7898 has returned on 16-Mar-25 due to Insufficient fund. Applicable return charges will be levied."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #7]
+Sender: JD-ICICIT
+Bank: ICICI Bank | Amount: 130 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 130.00 for Google Play, as per the Standing Instruction XNfYHeJM9H, on 16/03/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #8]
+Sender: AD-HDFCBK
+Bank: HDFC Bank | Amount: 399 | Type: DEBIT
+Merchant: Kukufm | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate Cancelled
+Towards KukuFM
+For Rs.399.00
+From HDFC Bank A/c x9400
+UMN 81c6bf5330ac4f7f9b07be45b70a897b@ybl"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #9]
+Sender: AD-HDFCBK
+Bank: HDFC Bank | Amount: 130 | Type: DEBIT
+Merchant: Google | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate Cancelled
+Towards Google
+For Rs.130.00
+From HDFC Bank A/c x9400
+UMN 378a9507c2cb4aff8b5f8566a0e4df17@ybl"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #10]
+Sender: JM-HDFCBK
+Bank: HDFC Bank | Amount: 100 | Type: DEBIT
+Merchant: Jar | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate Cancelled
+Towards Jar
+For Rs.100.00
+From HDFC Bank A/c x9400
+UMN 46b1c94417b440c9b175d297b6a168e4@ybl"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #11]
+Sender: VA-ICICIT
+Bank: ICICI Bank | Amount: 799 | Type: DEBIT
+Merchant: Amazon India | Category: OTT | Method: UPI | Status: Success
+Body: "Your account has been successfully debited with Rs 799.00 on 12-Apr-25 towards Amazon India for Amazon Prime AutoPay, RRN 510220040421-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #12]
+Sender: AX-ICICIT
+Bank: ICICI Bank | Amount: 799 | Type: DEBIT
+Merchant: Amazon India | Category: OTT | Method: UPI | Status: Success
+Body: "Your account has been successfully debited with Rs 799.00 on 12-Apr-25 towards Amazon India for Amazon Prime AutoPay, RRN 510220047596-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #13]
+Sender: VA-ICICIT
+Bank: ICICI Bank | Amount: 799 | Type: DEBIT
+Merchant: Amazon India | Category: Shopping | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Amazon India for Rs 799.00, RRN 510220047601-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #14]
+Sender: VA-ICICIT
+Bank: ICICI Bank | Amount: 706.82 | Type: DEBIT
+Merchant: Hostinger Pte L | Category: Subscription | Method: UPI | Status: Success
+Body: "Your account has been successfully debited with Rs 706.82 on 30-Apr-25 towards HOSTINGER PTE L for MERCHANTMANDATE AutoPay, RRN 512065244151-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #15]
+Sender: JX-ICICIT-S
+Bank: ICICI Bank | Amount: 130 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 130.00 for Google Play, as per the Standing Instruction XNfYHeJM9H, on 17/05/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #16]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 706.82 | Type: DEBIT
+Merchant: Hostinger Pte L | Category: Subscription | Method: UPI | Status: Failed
+Body: "Your account is not debited with Rs 706.82 towards HOSTINGER PTE L for MERCHANTMANDATE due to cbs rejection 0116, RRN 515120534402-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #17]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 59 | Type: DEBIT
+Merchant: Spotify India | Category: OTT | Method: UPI | Status: Failed
+Body: "Your account is not debited with Rs 59.00 towards Spotify India for MERCHANTMANDATE due to cbs rejection 0116, RRN 515333865589-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #18]
+Sender: JX-ICICIT-S
+Bank: ICICI Bank | Amount: 119 | Type: DEBIT
+Merchant: Spotify India | Category: OTT | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Spotify India for Rs 119.00, RRN 515394082471-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #19]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 59 | Type: DEBIT
+Merchant: Spotify India | Category: OTT | Method: UPI | Status: Success
+Body: "Your account has been successfully debited with Rs 59.00 on 02-Jun-25 towards Spotify India for MERCHANTMANDATE AutoPay, RRN 515333874790-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #20]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 706.82 | Type: DEBIT
+Merchant: Hostinger Pte L | Category: Subscription | Method: UPI | Status: Success
+Body: "Your account has been successfully debited with Rs 706.82 on 03-Jun-25 towards HOSTINGER PTE L for MERCHANTMANDATE AutoPay, RRN 515437752446-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #21]
+Sender: AX-HDFCBK-S
+Bank: HDFC Bank | Amount: 299 | Type: DEBIT
+Merchant: Nov Digital Entertainment Private Limited | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate Cancelled
+Towards NOV DIGITAL ENTERTAINMENT PRIVATE LIMITED
+For Rs.299.00
+From HDFC Bank A/c x9400
+UMN 86f9da6b34164de38fcc6955cd24ded9@okicici"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #22]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 1000 | Type: DEBIT
+Merchant: Hostinger Pte L | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards HOSTINGER PTE L for Rs 1000.00, RRN 518105189131-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #23]
+Sender: VM-ICICIT-S
+Bank: ICICI Bank | Amount: 1412.12 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1412.12 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/07/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/Ggbzj0 >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #24]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 25 | Type: DEBIT
+Merchant: Bhanu Pratap Si | Category: Subscription | Method: UPI | Status: Success
+Body: "ICICI Bank Acct XX898 debited for Rs 25.00 on 19-Jul-25; BHANU PRATAP SI credited. UPI:520049284812. Call 18002662 for dispute. SMS BLOCK 898 to 9215676766."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #25]
+Sender: VM-ICICIT-S
+Bank: ICICI Bank | Amount: 1412.12 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1412.12 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/08/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/0flOB7 >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #26]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 119 | Type: DEBIT
+Merchant: Spotify India | Category: OTT | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Spotify India for Rs 119.00, RRN 524380982410-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #27]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 39 | Type: DEBIT
+Merchant: Mjg International | Category: Subscription | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of USD 39.00 for MJG International, as per the Standing Instruction XyHe1LUExD, on 06/09/2025 for your ICICI Bank Credit Card 5008. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #28]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 1412.12 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1412.12 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/09/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #29]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 2 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: UPI | Status: Success
+Body: "Rs 2.00 debited from ICICI Bank Savings Account XX898 on 13-Sep-25 towards Google Play for UPI Mandate AutoPay Retrieval Ref No.974431442565"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #30]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 1950 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Google Play for Rs 1950.00, RRN 562253997785-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #31]
+Sender: AD-HDFCBK-S
+Bank: HDFC Bank | Amount: 139 | Type: DEBIT
+Merchant: Spotify | Category: OTT | Method: UPI | Status: Success
+Body: "UPI Mandate:
+Sent Rs.139.00
+from HDFC Bank A/c 9400
+To SPOTIFY
+18/09/25
+Ref 101485297367
+Not You? Call 18002586161/SMS BLOCK UPI to 7308080808
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #32]
+Sender: VM-ICICIT-S
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1196.72 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/10/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/0rf5aj >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #33]
+Sender: VA-ICICIT-S
+Bank: ICICI Bank | Amount: 14874 | Type: DEBIT
+Merchant: Unknown Merchant | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your account has been blocked by an amount of INR 14874.00, against the UPI one-time mandate-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #34]
+Sender: JX-NSEIPO-S
+Bank: Unknown Bank | Amount: 14874 | Type: DEBIT
+Merchant: Lenskart | Category: Investment | Method: UPI | Status: Success
+Body: "Dear ACKXXXXX8K IPO Lenskart Solutions Limited : App no GROWW8a24d215bdb UPI ID 9001025477@yesg for Rs 14874.00 received. Please check for UPI-Mandate collect request for blocking of funds- NSEIL"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #35]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 1 | Type: DEBIT
+Merchant: Openai Llc | Category: Subscription | Method: UPI | Status: Success
+Body: "Rs 1.00 debited from ICICI Bank Savings Account XX898 on 06-Nov-25 towards OpenAI LLC for Mandate AutoPay Retrieval Ref No.531016440502"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #36]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 14874 | Type: DEBIT
+Merchant: Lenskart Soluti | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, the mandate of INR 14874.00 raised by LENSKART SOLUTI on 07-Nov-25 and is revoked through RRN 531108633709-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #37]
+Sender: JD-ICICIT-S
+Bank: ICICI Bank | Amount: 14874 | Type: DEBIT
+Merchant: Unknown Merchant | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your account has been unblocked by an amount of INR 14874.00, against the UPI one-time mandate-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #38]
+Sender: VM-NSEIPO-S
+Bank: Unknown Bank | Amount: 14807 | Type: DEBIT
+Merchant: Unknown Merchant | Category: Investment | Method: UPI | Status: Success
+Body: "Dear ACKXXXXX8K IPO PINE LABS LIMITED : App no GROWWfa9b5f02ca6 UPI ID 9001025477@yesg for Rs 14807.00 received. Please check for UPI-Mandate collect request for blocking of funds- NSEIL"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #39]
+Sender: VM-ICICIT-S
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1196.72 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/11/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/CeXau8 >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #40]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1196.72 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/12/2025 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/ar/16stw2p >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #41]
+Sender: VM-HDFCBK-S
+Bank: HDFC Bank | Amount: 139 | Type: DEBIT
+Merchant: Spotify | Category: OTT | Method: UPI | Status: Success
+Body: "UPI Mandate:
+Sent Rs.139.00
+from HDFC Bank A/c 9400
+To SPOTIFY
+18/12/25
+Ref 102242157958
+Not You? Call 18002586161/SMS BLOCK UPI to 7308080808
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #42]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1196.72 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/01/2026 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit https://icici.co/ICICIT/ar/16BB3fE >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #43]
+Sender: JD-HDFCBK-S
+Bank: HDFC Bank | Amount: 139 | Type: DEBIT
+Merchant: Spotify | Category: OTT | Method: UPI | Status: Success
+Body: "UPI Mandate:
+Sent Rs.139.00
+from HDFC Bank A/c 9400
+To SPOTIFY
+18/01/26
+Ref 102488388368
+Not You? Call 18002586161/SMS BLOCK UPI to 7308080808
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #44]
+Sender: JM-ICICIT-S
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "Dear Customer, we have successfully processed the payment of INR 1196.72 for MAX LIFE, as per the Standing Instruction Xjpr8LiZj3, on 13/02/2026 for your ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icicibank.com >Cards >Credit Cards>Standing Instructions and Recurring Charges>Manage Standing Instructions."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #45]
+Sender: AD-HDFCBK-S
+Bank: HDFC Bank | Amount: 139 | Type: DEBIT
+Merchant: Spotify | Category: OTT | Method: UPI | Status: Success
+Body: "Update:
+Rs. 139.00 UPI mandate to SPOTIFY has been cancelled from HDFC Bank A/c x9400.
+UMN: d52a068ec4b54b0b8dea85c44a8daa73@ybl 
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #46]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 1 | Type: DEBIT
+Merchant: Story Tv | Category: Subscription | Method: UPI | Status: Success
+Body: "Rs 1.00 debited from ICICI Bank Savings Account XX898 on 23-Feb-26 towards Story TV for UPI Mandate AutoPay Retrieval Ref No.151990640704"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #47]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 1 | Type: DEBIT
+Merchant: Story Tv | Category: Subscription | Method: UPI | Status: Success
+Body: "Rs 1.00 debited from ICICI Bank Savings Account XX898 on 23-Feb-26 towards Story TV for UPI Mandate AutoPay Retrieval Ref No.916958547259"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #48]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 399 | Type: DEBIT
+Merchant: Story Tv | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Story TV for Rs 399.00, RRN 605491852399-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #49]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 399 | Type: DEBIT
+Merchant: Story Tv | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Story TV for Rs 399.00, RRN 642148564737-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #50]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 399 | Type: DEBIT
+Merchant: Openai Llc | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards OpenAI LLC for Rs 399.00, RRN 605552381352-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #51]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 799 | Type: DEBIT
+Merchant: Amazon India | Category: Shopping | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Amazon India for Rs 799.00, RRN 605536866784-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #52]
+Sender: JD-ICICIT-T
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "We have successfully processed payment of INR 1196.72 to Merchant MAX LIFE, as per Standing Instruction Xjpr8LiZj3 on 13/03/2026 for ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icici.bank.in - Personal - Cards - Manage Standing Instructions. Call 1800 1080 for queries."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #53]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 49 | Type: DEBIT
+Merchant: Spotify India P | Category: OTT | Method: UPI | Status: Success
+Body: "Rs 49.00 debited from ICICI Bank Savings Account XX898 on 16-Mar-26 towards SPOTIFY INDIA P for UPI Mandate AutoPay Retrieval Ref No.102926543944"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #54]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 199 | Type: DEBIT
+Merchant: Spotify India P | Category: OTT | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards SPOTIFY INDIA P for Rs 199.00, RRN 102926543977-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #55]
+Sender: JX-HDFCBK-S
+Bank: HDFC Bank | Amount: 2 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate:
+Sent Rs.2.00
+from HDFC Bank A/c 9400
+To Google Play
+18/03/26
+Ref 708296270776
+Not You? Call 18002586161/SMS BLOCK UPI to 7308080808
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #56]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 279 | Type: DEBIT
+Merchant: Airtelxstream | Category: Recharge | Method: UPI | Status: Success
+Body: "Rs 279.00 debited from ICICI Bank Savings Account XX898 on 28-Mar-26 towards Airtelxstream for UPI Mandate AutoPay Retrieval Ref No.109472055115"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #57]
+Sender: JD-ICICIT-T
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "We have successfully processed payment of INR 1196.72 to Merchant MAX LIFE, as per Standing Instruction Xjpr8LiZj3 on 13/04/2026 for ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icici.bank.in - Personal - Cards - Manage Standing Instructions. Call 1800 1080 for queries."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #58]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 279 | Type: DEBIT
+Merchant: Airtelxstream | Category: Recharge | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards Airtelxstream for Rs 279.00, RRN 648273340405-ICICI Bank."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #59]
+Sender: JD-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 5000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.5000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #60]
+Sender: AX-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 1000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.1000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #61]
+Sender: JX-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 1000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.1000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #62]
+Sender: JD-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 1000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.1000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #63]
+Sender: JM-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 399 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.399 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #64]
+Sender: JD-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 50000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.50000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #65]
+Sender: JD-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 50000 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.50000 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #66]
+Sender: VA-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 500 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.500 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #67]
+Sender: JX-ICICIT-T
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "We have successfully processed payment of INR 1196.72 to Merchant MAX LIFE, as per Standing Instruction Xjpr8LiZj3 on 13/05/2026 for ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icici.bank.in - Personal - Cards - Manage Standing Instructions. Call 1800 1080 for queries."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #68]
+Sender: JD-HDFCBK-S
+Bank: HDFC Bank | Amount: 149 | Type: DEBIT
+Merchant: Google Play | Category: Subscription | Method: UPI | Status: Success
+Body: "Update:
+Rs. 149.00 UPI mandate to Google Play has been cancelled from HDFC Bank A/c x9400.
+UMN: 00d5263edeb9400c937e1c9048b75198@okicici 
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #69]
+Sender: AX-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 500 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.500 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #70]
+Sender: AX-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 500 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.500 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #71]
+Sender: AD-HDFCBK-S
+Bank: HDFC Bank | Amount: 1 | Type: DEBIT
+Merchant: Thedharmarthsewasansth | Category: Subscription | Method: UPI | Status: Success
+Body: "UPI Mandate:
+Sent Rs.1.00
+from HDFC Bank A/c 9400
+To THEDHARMARTHSEWASANSTH
+31/05/26
+Ref 615119981522
+Not You? Call 18002586161/SMS BLOCK UPI to 7308080808
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #72]
+Sender: JD-RZRPAY-S
+Bank: AU Small Finance Bank | Amount: 1 | Type: DEBIT
+Merchant: The Dharmarth Sewa Sanstha Suj | Category: Subscription | Method: UPI | Status: Success
+Body: "Your payment of Rs.1 for the subscription to THE DHARMARTH SEWA SANSTHA SUJ is successful. Any recurring subscription payments will be automatically charged to your UPI from now - Razorpay"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #73]
+Sender: JX-ICICIT-T
+Bank: ICICI Bank | Amount: 1196.72 | Type: DEBIT
+Merchant: Max Life | Category: Insurance | Method: Card | Status: Success
+Body: "We have successfully processed payment of INR 1196.72 to Merchant MAX LIFE, as per Standing Instruction Xjpr8LiZj3 on 13/06/2026 for ICICI Bank Credit Card 7017. To manage your Standing Instructions, visit www.icici.bank.in - Personal - Cards - Manage Standing Instructions. Call 1800 1080 for queries."
+--------------------------------------------------------------------------------
+
+[AUTOPAY #74]
+Sender: VM-HDFCBK-S
+Bank: HDFC Bank | Amount: 1 | Type: DEBIT
+Merchant: Thedharmarthsewasansthasu | Category: Subscription | Method: UPI | Status: Success
+Body: "Update:
+Rs. 1.00 UPI mandate to THEDHARMARTHSEWASANSTHASU has been cancelled from HDFC Bank A/c x9400.
+UMN: 52c9871710647a4ee0634bcee10aa17b@okhdfcb 
+"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #75]
+Sender: AX-ICICIT-S
+Bank: ICICI Bank | Amount: 2 | Type: DEBIT
+Merchant: Autopay Manager | Category: Subscription | Method: UPI | Status: Success
+Body: "Rs 2.00 debited from ICICI Bank Savings Account XX898 on 01-Jul-26 towards AutoPay Manager for UPI Mandate AutoPay Retrieval Ref No.618209265885"
+--------------------------------------------------------------------------------
+
+[AUTOPAY #76]
+Sender: AD-ICICIT-S
+Bank: ICICI Bank | Amount: 199 | Type: DEBIT
+Merchant: Autopay Manager | Category: Subscription | Method: UPI | Status: Success
+Body: "Dear Customer, your AutoPay mandate is successfully revoked towards AutoPay Manager for Rs 199.00, RRN 618235359696-ICICI Bank."
+--------------------------------------------------------------------------------
+
+=== SCAN COMPLETE ===
+Total Messages Checked: 5634
+Total Autopay Messages Found: 76

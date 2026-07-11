@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import android.content.Context
 import android.content.Intent
@@ -470,6 +470,29 @@ class FinanceCoreModule(reactContext: ReactApplicationContext) : ReactContextBas
     fun getDeviceManufacturer(promise: Promise) {
         promise.resolve(android.os.Build.MANUFACTURER)
     }
+
+    @ReactMethod
+    fun getAppVersion(promise: Promise) {
+        try {
+            val pInfo = reactApplicationContext.packageManager.getPackageInfo(reactApplicationContext.packageName, 0)
+            val version = pInfo.versionName
+            val versionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
+            val map = Arguments.createMap().apply {
+                putString("versionName", version)
+                putDouble("versionCode", versionCode.toDouble())
+                putString("packageName", reactApplicationContext.packageName)
+            }
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("ERROR_GETTING_VERSION", e.message, e)
+        }
+    }
+
     companion object {
         var instance: FinanceCoreModule? = null
     }

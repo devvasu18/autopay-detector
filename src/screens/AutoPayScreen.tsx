@@ -194,9 +194,15 @@ export const AutoPayScreen: React.FC = () => {
             >
               {/* Top Row */}
               <View style={styles.row}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
                   <MerchantLogo name={ap.merchant} size={28} />
-                  <Text style={[styles.merchantName, { color: colors.text, marginLeft: 10 }]}>{ap.merchant}</Text>
+                  <Text
+                    style={[styles.merchantName, { color: colors.text, marginLeft: 10, flex: 1 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {ap.merchant}
+                  </Text>
                 </View>
                 <View
                   style={[

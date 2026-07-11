@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import android.app.Notification
 import android.app.NotificationChannel

@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

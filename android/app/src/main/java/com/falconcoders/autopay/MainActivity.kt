@@ -1,4 +1,4 @@
-package com.autopaytracker
+package com.falconcoders.autopay
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity
@@ -10,11 +10,6 @@ class MainActivity : ReactActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(null)
-    try {
-        TTSService.start(this, "", java.util.Locale.US)
-    } catch (e: Exception) {
-        android.util.Log.e("MainActivity", "Failed to start TTSService at launch", e)
-    }
   }
 
   /**

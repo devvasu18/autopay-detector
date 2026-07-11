@@ -79,7 +79,7 @@ function pollSms() {
         // Forward to the app's background speaker using direct ADB broadcast
         // Escape single quotes for the adb shell argument
         const escapedBody = msg.body.replace(/'/g, "'\\''");
-        const broadcastCmd = `"${ADB_PATH}" shell "am broadcast -a com.autopaytracker.TEST_SMS -n com.autopaytracker/.TestSMSReceiver --es sender '${msg.address}' --es body '${escapedBody}'"`;
+        const broadcastCmd = `"${ADB_PATH}" shell "am broadcast -a com.falconcoders.autopay.TEST_SMS -n com.falconcoders.autopay/.TestSMSReceiver --es sender '${msg.address}' --es body '${escapedBody}'"`;
         
         console.log(`    Forwarding to Soundbox...`);
         const result = runCommand(broadcastCmd);

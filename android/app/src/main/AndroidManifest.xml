@@ -56,7 +56,7 @@
 
       <receiver android:name=".TestSMSReceiver" android:exported="true">
           <intent-filter>
-              <action android:name="com.autopaytracker.TEST_SMS" />
+              <action android:name="com.falconcoders.autopay.TEST_SMS" />
           </intent-filter>
       </receiver>
 

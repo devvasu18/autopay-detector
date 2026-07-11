@@ -711,9 +711,15 @@ export const HomeScreen: React.FC<{ navigation?: any }> = () => {
               {upcomingAutoPays.map((ap) => (
                 <View key={ap.id} style={[styles.autoPayCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.autoPayRow}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
                       <MerchantLogo name={ap.merchant} size={24} />
-                      <Text style={[styles.autoPayMerchant, { color: colors.text, marginLeft: 8 }]}>{ap.merchant}</Text>
+                      <Text
+                        style={[styles.autoPayMerchant, { color: colors.text, marginLeft: 8, flex: 1 }]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {ap.merchant}
+                      </Text>
                     </View>
                   </View>
                   <Text style={[styles.autoPayAmount, { color: colors.text }]}>{formatCurrency(ap.amount)}</Text>
